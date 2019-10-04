@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">CesBLE</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="bluetooth_disabled">Bluetooth is not enabled</string>
+    <string name="bluetooth_scanning">Scanning…</string>
+    <string name="bluetooth_low_energy_not_supported">Bluetooth Low Energy is not supported !</string>
+
+    <string name="bluetooth_scan_classic">Classic Scan</string>
+    <string name="bluetooth_scan_low_energy">Low Energy Scan</string>
+    <string name="bluetooth_scan_stop">Stop Scanning</string>
+</resources>
