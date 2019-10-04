@@ -21,7 +21,7 @@ class BTLEDeviceAdapter(private val dataSet: ArrayList<ScanResult>, private val 
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.textView.text = dataSet[position].scanRecord?.deviceName
-//android.util.Log.e("TAG", "onBindViewHolder------------------------------------------------------"+dataSet[position].name)
+android.util.Log.e("TAG", "onBindViewHolder------------------------------------------------------"+dataSet[position].scanRecord?.deviceName+", "+dataSet[position].device.name)
         holder.textView.tag = position
         holder.textView.setOnClickListener(onClickListener)
     }

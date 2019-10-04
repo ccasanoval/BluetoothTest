@@ -17,6 +17,10 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.lifecycle.ViewModel
 
 
+//TODO: https://developer.android.com/reference/android/bluetooth/BluetoothHeadset
+
+//TODO: comprobar si es headset y permitir el pareamiento y el uso...
+
 class MainPresenter(private val view: View) : ViewModel() {
 
     companion object {
@@ -45,19 +49,17 @@ class MainPresenter(private val view: View) : ViewModel() {
 
 
     private val textScanning = view.app.getString(R.string.bluetooth_scanning)
-    //private val nullClickListener = android.view.View.OnClickListener{}
-    //private val scanningAdapter = BTDeviceListAdapter(getArrayOfString(textScanning), nullClickListener)
 
-
-
-    private lateinit var viewAdapter: BTDeviceListAdapter
+    private lateinit var viewAdapter: RecyclerView.Adapter<RecyclerView.ViewHolder>//BTDeviceAdapter
 
 
     private val classicClickListener = android.view.View.OnClickListener {
-        android.util.Log.e(TAG, "classicClickListener----${it.tag}-------------------------"+viewAdapter.getItemAt(it.tag as Int))
+        val adapter =  viewAdapter as BTDeviceAdapter
+        android.util.Log.e(TAG, "classicClickListener----${it.tag}-------------------------"+adapter.getItemAt(it.tag as Int))
     }
     private val lowEnergyClickListener = android.view.View.OnClickListener {
-        android.util.Log.e(TAG, "lowEnergyClickListener----${it.tag}-----------------------"+viewAdapter.getItemAt(it.tag as Int))
+        val adapter =  viewAdapter as BTLEDeviceAdapter
+        android.util.Log.e(TAG, "lowEnergyClickListener----${it.tag}-----------------------"+adapter.getItemAt(it.tag as Int))
     }
 
     init {
@@ -125,10 +127,6 @@ class MainPresenter(private val view: View) : ViewModel() {
         view.btnScanStop.isEnabled = false
     }
 
-    //private fun getArrayOfString(value: String) = arrayOf(value).toCollection(ArrayList())
-    //private fun getArrayOfString(value: Int) = arrayOf(view.app.getString(value)).toCollection(ArrayList())
-
-
     //----------------------------------------------------------------------------------------------
     // CLASSIC SCAN
     //https://www.thedroidsonroids.com/blog/bluetooth-classic-vs-bluetooth-low-energy-on-android-hints-implementation-steps
@@ -150,11 +148,11 @@ class MainPresenter(private val view: View) : ViewModel() {
                 if(bluetoothDevice.name.isEmpty())return
                 //if(viewAdapter.itemCount == 1 && viewAdapter.getItemAt(0) == view.app.getString(R.string.bluetooth_scanning)) {
                 if(currentScanned == 0) {
-                    viewAdapter = BTDeviceListAdapter(arrayListOf(bluetoothDevice), classicClickListener)
+                    viewAdapter = BTDeviceAdapter(arrayListOf(bluetoothDevice), classicClickListener) as RecyclerView.Adapter<RecyclerView.ViewHolder>
                     view.listDevices.adapter = viewAdapter
                 }
                 else {
-                    viewAdapter.add(bluetoothDevice)
+                    (viewAdapter as BTDeviceAdapter).add(bluetoothDevice)
                     viewAdapter.notifyDataSetChanged()
                 }
                 currentScanned++
@@ -217,7 +215,7 @@ class MainPresenter(private val view: View) : ViewModel() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             android.util.Log.e(TAG, "onScanResult----------callbackType=$callbackType result=$result ")
             result.scanRecord?.deviceName?.let {
-                viewAdapter = BTDeviceListAdapter(arrayListOf(result.device), lowEnergyClickListener)
+                viewAdapter = BTLEDeviceAdapter(arrayListOf(result), lowEnergyClickListener) as RecyclerView.Adapter<RecyclerView.ViewHolder>
                 view.listDevices.adapter = viewAdapter
                 currentScanned++
             }
@@ -227,14 +225,14 @@ class MainPresenter(private val view: View) : ViewModel() {
 
             val filteredResults = results
                 .filter { it.scanRecord?.deviceName != null }
-                .map { it.device }
+                //.map { it.device }
 
             for(item in results)
-                android.util.Log.e(TAG, "onBatchScanResults-- Z:"+item.scanRecord?.deviceName+", "+item.device.address+", "+item.device.type+", "+item.device.bluetoothClass)
+                android.util.Log.e(TAG, "onBatchScanResults-- Z:"+item.scanRecord?.deviceName+", "+item.device.name+", "+item.device.address+", "+item.device.type+", "+item.device.bluetoothClass)
             for(item in filteredResults)
-                android.util.Log.e(TAG, "onBatchScanResults-- C:"+item.name+", "+item.address+", "+item.type+", "+item.bluetoothClass)
+                android.util.Log.e(TAG, "onBatchScanResults-- C:"+item.scanRecord?.deviceName+", "+item.device.name+", "+item.device.address+", "+item.device.type+", "+item.device.bluetoothClass)
 
-            viewAdapter = BTDeviceListAdapter(ArrayList(filteredResults), lowEnergyClickListener)
+            viewAdapter = BTLEDeviceAdapter(ArrayList(filteredResults), lowEnergyClickListener) as RecyclerView.Adapter<RecyclerView.ViewHolder>
             view.listDevices.adapter = viewAdapter
 
             //android.util.Log.e(TAG, "onBatchScanResults------${a.size}----results=$results ")
@@ -243,7 +241,7 @@ class MainPresenter(private val view: View) : ViewModel() {
         }
         override fun onScanFailed(errorCode: Int) {
             android.util.Log.e(TAG, "onScanFailed---------errorCode=$errorCode  SCAN_FAILED_ALREADY_STARTED=$SCAN_FAILED_ALREADY_STARTED")
-            //viewAdapter = BTDeviceListAdapter(getArrayOfString("onScanFailed errorCode=$errorCode"), nullClickListener)
+            //viewAdapter = BTDeviceAdapter(getArrayOfString("onScanFailed errorCode=$errorCode"), nullClickListener)
             view.txtStatus.text = "onScanFailed errorCode=$errorCode"
             view.listDevices.adapter = viewAdapter
         }

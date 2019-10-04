@@ -7,8 +7,8 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class BTDeviceListAdapter(private val dataSet: ArrayList<BluetoothDevice>, private val onClickListener: View.OnClickListener)
-    : RecyclerView.Adapter<BTDeviceListAdapter.ViewHolder>() {
+class BTDeviceAdapter(private val dataSet: ArrayList<BluetoothDevice>, private val onClickListener: View.OnClickListener)
+    : RecyclerView.Adapter<BTDeviceAdapter.ViewHolder>() {
 
     class ViewHolder(val textView: TextView) : RecyclerView.ViewHolder(textView)
 
