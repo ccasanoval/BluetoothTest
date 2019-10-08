@@ -8,5 +8,6 @@
 
     <string name="bluetooth_scan_classic">Classic Scan</string>
     <string name="bluetooth_scan_low_energy">Low Energy Scan</string>
+    <string name="bluetooth_paired">Paired</string>
     <string name="bluetooth_scan_stop">Stop Scanning</string>
 </resources>

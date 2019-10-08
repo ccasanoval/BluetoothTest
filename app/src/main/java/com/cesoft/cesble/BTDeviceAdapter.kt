@@ -1,6 +1,7 @@
 package com.cesoft.cesble
 
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothDevice.*
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,8 +20,17 @@ class BTDeviceAdapter(private val dataSet: ArrayList<BluetoothDevice>, private v
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.textView.text = dataSet[position].name
-//android.util.Log.e("TAG", "onBindViewHolder------------------------------------------------------"+dataSet[position].name)
+
+        //http://domoticx.com/bluetooth-class-of-device-lijst-cod/
+        //bluetoothDevice.bluetoothClass.deviceClass == AUDIO_VIDEO_WEARABLE_HEADSET
+        val headSet = if(dataSet[position].bluetoothClass.deviceClass == 240404) "*" else " "
+        val pre = when {
+            dataSet[position].type == DEVICE_TYPE_LE        -> "  LE > "
+            dataSet[position].type == DEVICE_TYPE_DUAL      -> "Dual > "
+            dataSet[position].type == DEVICE_TYPE_CLASSIC   -> "Clss > "
+            else                                            -> "  ?  > "
+        }
+        holder.textView.text = headSet + pre + dataSet[position].name
         holder.textView.tag = position
         holder.textView.setOnClickListener(onClickListener)
     }

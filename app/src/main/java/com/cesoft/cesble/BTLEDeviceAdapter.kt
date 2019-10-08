@@ -1,6 +1,5 @@
 package com.cesoft.cesble
 
-import android.bluetooth.BluetoothDevice
 import android.bluetooth.le.ScanResult
 import android.view.LayoutInflater
 import android.view.View
@@ -20,7 +19,9 @@ class BTLEDeviceAdapter(private val dataSet: ArrayList<ScanResult>, private val 
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.textView.text = dataSet[position].scanRecord?.deviceName
+        val headSet = if(dataSet[position].device.bluetoothClass.deviceClass == 240404) "*" else " "
+        val pre = "LE > "
+        holder.textView.text = headSet + pre + dataSet[position].scanRecord?.deviceName
 android.util.Log.e("TAG", "onBindViewHolder------------------------------------------------------"+dataSet[position].scanRecord?.deviceName+", "+dataSet[position].device.name)
         holder.textView.tag = position
         holder.textView.setOnClickListener(onClickListener)
