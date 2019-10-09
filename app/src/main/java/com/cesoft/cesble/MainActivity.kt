@@ -52,6 +52,9 @@ class MainActivity : AppCompatActivity(), MainPresenter.View {
         builder.setOnDismissListener(onDismissListener)
         builder.show()
     }
+    override fun requestPermissions2(permissions: Array<String>, requestCode: Int) {
+        super.requestPermissions(permissions, requestCode)
+    }
     override val broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val action = intent.action
@@ -112,4 +115,7 @@ Log.e(TAG, "broadcastReceiver:onReceive-----------------------------------------
         }
     }
 
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        presenter.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
 }

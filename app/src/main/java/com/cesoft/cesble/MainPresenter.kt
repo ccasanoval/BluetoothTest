@@ -1,11 +1,9 @@
 package com.cesoft.cesble
 
+import android.Manifest
 import android.app.Application
 import android.bluetooth.*
-import android.bluetooth.le.ScanCallback
-import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
-import android.bluetooth.le.ScanSettings
 import android.content.*
 import android.content.pm.PackageManager
 import android.widget.Button
@@ -15,15 +13,15 @@ import androidx.lifecycle.ViewModel
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothAdapter
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import android.media.AudioManager
-import android.bluetooth.BluetoothHeadset
 import android.content.IntentFilter
 import android.bluetooth.BluetoothProfile
+import android.bluetooth.le.ScanCallback
 import android.content.Intent
-import android.icu.lang.UCharacter.GraphemeClusterBreak.T
-import android.R.attr.name
-
-
+import com.cesoft.cesble.devices.Bluetooth
+import com.cesoft.cesble.devices.BluetoothClassic
+import com.cesoft.cesble.devices.BluetoothLE
+import org.koin.core.KoinComponent
+import org.koin.core.inject
 
 
 //TODO: https://developer.android.com/reference/android/bluetooth/BluetoothHeadset
@@ -31,10 +29,11 @@ import android.R.attr.name
 //TODO: comprobar si es headset y permitir el pareamiento y el uso...
 
 //https://blog.usejournal.com/improve-recyclerview-performance-ede5cec6c5bf
-class MainPresenter(private val view: View) : ViewModel() {
+class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
 
     companion object {
         private val TAG = MainPresenter::class.java.simpleName
+        private const val PERMISSION_REQUEST_LOCATION = 6969
         private const val REQUEST_ENABLE_BT = 6968
     }
 
@@ -49,9 +48,15 @@ class MainPresenter(private val view: View) : ViewModel() {
         val listDevices: RecyclerView
         val broadcastReceiver: BroadcastReceiver
         fun startActivityForResult(intent: Intent, requestCode: Int)
+        fun requestPermissions2(permissions: Array<String>, requestCode: Int)
         fun alert(id: Int)
         fun alertDialog(title: String, message: String, onDismissListener: DialogInterface.OnDismissListener)
     }
+
+    private val bluetooth : Bluetooth by inject()
+    private val bluetoothClassic : BluetoothClassic by inject()
+    private val bluetoothLE : BluetoothLE by inject()
+
 
     private var isScanning = false
     private var currentScanned = 0
@@ -85,6 +90,8 @@ class MainPresenter(private val view: View) : ViewModel() {
     }
 
     init {
+        checkPermissionsForBluetoothLowEnergy()
+
         isLowEnergyEnabled = view.app.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)
         if( ! isLowEnergyEnabled)
             view.alert(R.string.bluetooth_low_energy_not_supported)
@@ -92,27 +99,29 @@ class MainPresenter(private val view: View) : ViewModel() {
         stopScanUI()
 
         view.btnScanClassic.setOnClickListener {
-            if (isBluetoothEnabled())
+            if (bluetooth.isEnabled)
                 startScanClassic()
             else
                 view.alert(R.string.bluetooth_disabled)
         }
         view.btnScanLowEnergy.setOnClickListener {
-            if (isBluetoothEnabled())
+            if (bluetooth.isEnabled)
                 startScanLE()
             else
                 view.alert(R.string.bluetooth_disabled)
         }
         view.btnPaired.setOnClickListener {
-            if (isBluetoothEnabled())
+            if (bluetooth.isEnabled)
                 showPairedDevices()
             else
                 view.alert(R.string.bluetooth_disabled)
         }
         view.btnScanStop.setOnClickListener {
-android.util.Log.e(TAG, "view.btnScanStop.setOnClickListener--------------------------------------------------------------------------------------------")
-            if (isBluetoothEnabled())
-                stopScanLE()
+            if (bluetooth.isEnabled) {
+                android.util.Log.e(TAG, "stopScan---------------------------------------------")
+                bluetoothLE.stopScan()
+                stopScanUI()
+            }
             else
                 view.alert(R.string.bluetooth_disabled)
         }
@@ -122,30 +131,14 @@ android.util.Log.e(TAG, "view.btnScanStop.setOnClickListener--------------------
         turnOnBluetooth()
     }
 
-    private fun isBluetoothEnabled(): Boolean {
-        val adapter = BluetoothAdapter.getDefaultAdapter()
-        return adapter != null && adapter.isEnabled
-    }
-
-    private val bluetoothAdapter: BluetoothAdapter? by lazy(LazyThreadSafetyMode.NONE) {
-        val bluetoothManager = view.app.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        bluetoothManager.adapter
-    }
-
-    private val BluetoothAdapter.isDisabled: Boolean
-        get() = !isEnabled
-
     private fun turnOnBluetooth() {
-        bluetoothAdapter?.let {bluetoothAdapter ->
-            if (bluetoothAdapter.isDisabled) {
-                val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-                view.startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
-                disableAllUI()
-            } else if( ! isScanning) {
-                view.btnScanClassic.isEnabled = true
-            }
-        } ?: run {
+        if (bluetooth.isDisabled) {
+            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            view.startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
             disableAllUI()
+        }
+        else if( ! isScanning) {//TODO clean
+            view.btnScanClassic.isEnabled = true
         }
     }
 
@@ -156,7 +149,7 @@ android.util.Log.e(TAG, "view.btnScanStop.setOnClickListener--------------------
         view.btnScanLowEnergy.isEnabled = false
         view.btnScanStop.isEnabled = false
     }
-    private fun disableScanClassic() {
+    private fun disableScanClassicUI() {
         view.btnScanStop.isEnabled = true
         view.btnScanClassic.isEnabled = false
         view.btnScanLowEnergy.isEnabled = isLowEnergyEnabled
@@ -168,6 +161,14 @@ android.util.Log.e(TAG, "view.btnScanStop.setOnClickListener--------------------
         view.txtStatus.text = ""
         isScanning = false
         //currentScanned = 0
+    }
+    private fun startScanLEUI() {
+        view.btnScanStop.isEnabled = true
+        view.btnScanClassic.isEnabled = true
+        view.btnPaired.isEnabled = true
+        view.btnScanLowEnergy.isEnabled = false
+        //
+        view.txtStatus.text = textScanning
     }
 
 
@@ -204,8 +205,7 @@ android.util.Log.e(TAG, "view.btnScanStop.setOnClickListener--------------------
 
     private fun startScanClassic() {
 
-        stopScanLE()
-        disableScanClassic()
+        disableScanClassicUI()
 
         isScanning = true
         currentScanned = 0
@@ -251,79 +251,14 @@ android.util.Log.e(TAG, "view.btnScanStop.setOnClickListener--------------------
     // LOW ENERGY SCAN
     private fun startScanLE() {
 
-        stopScanLE()
-        view.btnScanStop.isEnabled = true
-        view.btnScanClassic.isEnabled = true
-        view.btnScanLowEnergy.isEnabled = false
+        startScanLEUI()
+
         isScanning = true
 
-        //viewAdapter = scanningAdapter
-        view.txtStatus.text = textScanning
 
-        val ssb = ScanSettings.Builder()
-            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-            //.setScanMode(ScanSettings.SCAN_MODE_BALANCED)
-            .setReportDelay(5000)
-        //.setUseHardwareBatchingIfSupported(true)
-        //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-        //    ssb.setLegacy(false)
-
-        val settings = ssb.build()
-
-        val filter = ScanFilter.Builder().setDeviceName(null).build()
-        val filters = ArrayList<ScanFilter>()
-        filters.add(filter)
-
-        bluetoothAdapter?.bluetoothLeScanner?.startScan(filters, settings, callbackStartLowEnergy)//filters is mandatory for Android 9!!!
-        //bluetoothAdapter?.bluetoothLeScanner?.startScan(null, settings, callbackStart)
-        //bluetoothAdapter?.bluetoothLeScanner?.startScan(callbackStart)
-    }
-    //----------------------------------------------------------------------------------------------
-    private val callbackStartLowEnergy = object: ScanCallback() {
-        private val TAG = "callbackStart"
-        override fun onScanResult(callbackType: Int, result: ScanResult) {
-            android.util.Log.e(TAG, "onScanResult----------callbackType=$callbackType result=$result ")
-            result.scanRecord?.deviceName?.let {
-                viewAdapter = BTLEDeviceAdapter(arrayListOf(result), lowEnergyClickListener) as RecyclerView.Adapter<RecyclerView.ViewHolder>
-                view.listDevices.adapter = viewAdapter
-                currentScanned++
-            }
-        }
-        private var nDeleteCurrentResults: Int = 5
-        override fun onBatchScanResults(results: List<ScanResult>) {
-
-            val filteredResults = results
-                .filter { it.scanRecord?.deviceName != null }
-                //.map { it.device }
-
-            val sortedResults = filteredResults.toSortedSet(Comparator<ScanResult> { scanResult1: ScanResult, scanResult2: ScanResult ->
-                scanResult1.scanRecord!!.deviceName!!.compareTo(scanResult2.scanRecord!!.deviceName!!)
-            })
-
-            for(item in results)
-                android.util.Log.e(TAG, "onBatchScanResults-- Z:"+item.scanRecord?.deviceName+", "+item.device.name+", "+item.device.address+", "+item.device.type+", "+item.device.bluetoothClass)
-            for(item in filteredResults)
-                android.util.Log.e(TAG, "onBatchScanResults-- C:"+item.scanRecord?.deviceName+", "+item.device.name+", "+item.device.address+", "+item.device.type+", "+item.device.bluetoothClass)
-
-            viewAdapter = BTLEDeviceAdapter(ArrayList(sortedResults), lowEnergyClickListener) as RecyclerView.Adapter<RecyclerView.ViewHolder>
-            view.listDevices.adapter = viewAdapter
-
-            //android.util.Log.e(TAG, "onBatchScanResults------${a.size}----results=$results ")
-            //android.util.Log.e(TAG, "onBatchScanResults-- A ----${results.size}----results=$results ")//deviceName=((?!null).)
-            android.util.Log.e(TAG, "onBatchScanResults-- B$nDeleteCurrentResults- ----${filteredResults.size}----results=$filteredResults ")//deviceName=((?!null).)
-        }
-        override fun onScanFailed(errorCode: Int) {
-            android.util.Log.e(TAG, "onScanFailed---------errorCode=$errorCode  SCAN_FAILED_ALREADY_STARTED=$SCAN_FAILED_ALREADY_STARTED")
-            view.txtStatus.text = "onScanFailed errorCode=$errorCode"
-            view.listDevices.adapter = viewAdapter
-        }
+        bluetoothLE.startScan(callback)
     }
 
-    private fun stopScanLE() {
-        if(isLowEnergyEnabled)
-            bluetoothAdapter?.bluetoothLeScanner?.stopScan(callbackStartLowEnergy)
-        stopScanUI()
-    }
 
     //----------------------------------------------------------------------------------------------
     // PAIRED DEVICES
@@ -344,10 +279,34 @@ android.util.Log.e(TAG, "view.btnScanStop.setOnClickListener--------------------
 
 
     //----------------------------------------------------------------------------------------------
-    // PERMISSIONS
+    // HEADSET
     //----------------------------------------------------------------------------------------------
-    /*private fun checkPermissionsForBluetooth() {
-        android.util.Log.e(TAG, "checkPermissionsForBLE---------------------------------------------------")
+    private fun listenBluetoothProfileHeadset() {
+        val bluetoothManager = view.app.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        bluetoothManager.adapter.getProfileProxy(view.app, object: BluetoothProfile.ServiceListener {
+            override fun onServiceDisconnected(profile: Int) {
+                android.util.Log.e(TAG, "onServiceDisconnected------------------------------------------------profile=$profile")
+            }
+            override fun onServiceConnected(profile: Int, proxy: BluetoothProfile?) {
+                //isHeadsetConnected = proxy!!.connectedDevices.size > 0
+                android.util.Log.e(TAG, "onServiceConnected------------------------------------------------profile=$profile N=${proxy!!.connectedDevices.size}")
+            }
+
+        }, BluetoothProfile.HEADSET)
+
+        view.app.registerReceiver(view.broadcastReceiver, IntentFilter(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED))
+    }
+
+
+
+
+
+
+    //----------------------------------------------------------------------------------------------
+    // PERMISSIONS : BT Low Energy needs location access permission to scan for LE devices
+    //----------------------------------------------------------------------------------------------
+    private fun checkPermissionsForBluetoothLowEnergy() {
+        android.util.Log.e("Main", "checkPermissionsForBLE---------------------------------------------------")
         if(view.app.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             view.alertDialog(
                 "This app needs location access",
@@ -372,31 +331,51 @@ android.util.Log.e(TAG, "view.btnScanStop.setOnClickListener--------------------
                 return
             }
         }
-    }*/
-
-
-
-    //----------------------------------------------------------------------------------------------
-    // HEADSET
-    //----------------------------------------------------------------------------------------------
-    private fun listenBluetoothProfileHeadset() {
-        val bluetoothManager = view.app.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        bluetoothManager.adapter.getProfileProxy(view.app, object: BluetoothProfile.ServiceListener {
-            override fun onServiceDisconnected(profile: Int) {
-                android.util.Log.e(TAG, "onServiceDisconnected------------------------------------------------profile=$profile")
-            }
-            override fun onServiceConnected(profile: Int, proxy: BluetoothProfile?) {
-                //isHeadsetConnected = proxy!!.connectedDevices.size > 0
-                android.util.Log.e(TAG, "onServiceConnected------------------------------------------------profile=$profile N=${proxy!!.connectedDevices.size}")
-            }
-
-        }, BluetoothProfile.HEADSET)
-
-        view.app.registerReceiver(view.broadcastReceiver, IntentFilter(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED))
     }
 
 
 
+    //----------------------------------------------------------------------------------------------
+    //// Low Energy Callback
+    private val callback = object: ScanCallback() {
+        private val TAG = "callbackStart"
+        override fun onScanResult(callbackType: Int, result: ScanResult) {
+            android.util.Log.e(TAG, "onScanResult----------callbackType=$callbackType result=$result ")
+            result.scanRecord?.deviceName?.let {
+                viewAdapter = BTLEDeviceAdapter(arrayListOf(result), lowEnergyClickListener) as RecyclerView.Adapter<RecyclerView.ViewHolder>
+                view.listDevices.adapter = viewAdapter
+                currentScanned++
+            }
+        }
+        private var nDeleteCurrentResults: Int = 5
+        override fun onBatchScanResults(results: List<ScanResult>) {
+
+            val filteredResults = results
+                .filter { it.scanRecord?.deviceName != null }
+            //.map { it.device }
+
+            val sortedResults = filteredResults.toSortedSet(Comparator<ScanResult> { scanResult1: ScanResult, scanResult2: ScanResult ->
+                scanResult1.scanRecord!!.deviceName!!.compareTo(scanResult2.scanRecord!!.deviceName!!)
+            })
+
+            for(item in results)
+                android.util.Log.e(TAG, "onBatchScanResults-- Z:"+item.scanRecord?.deviceName+", "+item.device.name+", "+item.device.address+", "+item.device.type+", "+item.device.bluetoothClass)
+            for(item in filteredResults)
+                android.util.Log.e(TAG, "onBatchScanResults-- C:"+item.scanRecord?.deviceName+", "+item.device.name+", "+item.device.address+", "+item.device.type+", "+item.device.bluetoothClass)
+
+            viewAdapter = BTLEDeviceAdapter(ArrayList(sortedResults), lowEnergyClickListener) as RecyclerView.Adapter<RecyclerView.ViewHolder>
+            view.listDevices.adapter = viewAdapter
+
+            //android.util.Log.e(TAG, "onBatchScanResults------${a.size}----results=$results ")
+            //android.util.Log.e(TAG, "onBatchScanResults-- A ----${results.size}----results=$results ")//deviceName=((?!null).)
+            android.util.Log.e(TAG, "onBatchScanResults-- B$nDeleteCurrentResults- ----${filteredResults.size}----results=$filteredResults ")//deviceName=((?!null).)
+        }
+        override fun onScanFailed(errorCode: Int) {
+            android.util.Log.e(TAG, "onScanFailed---------errorCode=$errorCode  SCAN_FAILED_ALREADY_STARTED=$SCAN_FAILED_ALREADY_STARTED")
+            view.txtStatus.text = "onScanFailed errorCode=$errorCode"
+            view.listDevices.adapter = viewAdapter
+        }
+    }
 }
 
 
