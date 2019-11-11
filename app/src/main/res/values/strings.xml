@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">CesBLE</string>
+
     <string name="action_settings">Settings</string>
+    <string name="action_aina_spp">SPP test</string>
+    <string name="action_aina_ble">AINA BLE test</string>
 
     <string name="bluetooth_disabled">Bluetooth is not enabled</string>
     <string name="bluetooth_scanning">Scanning…</string>
@@ -8,6 +11,15 @@
 
     <string name="bluetooth_scan_classic">Classic Scan</string>
     <string name="bluetooth_scan_low_energy">Low Energy Scan</string>
-    <string name="bluetooth_paired">Paired</string>
+    <string name="bluetooth_scan_paired">Paired</string>
     <string name="bluetooth_scan_stop">Stop Scanning</string>
+
+    <string name="bluetooth_pairing_tle">Device pairing</string>
+    <string name="bluetooth_pairing_msg">Do you want to pair the device?</string>
+    <string name="bluetooth_paired_ok">Device paired</string>
+    <string name="bluetooth_paired_error">Error pairing device</string>
+
+    <string name="location_permission_tle">Location permission</string>
+    <string name="location_permission_msg">Please grant location access so this app can detect beacons</string>
+    <string name="location_permission_err">Without location permission Low Energy scan won\'t work</string>
 </resources>

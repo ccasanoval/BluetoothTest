@@ -1,27 +1,27 @@
 package com.cesoft.cesble
 
 import android.app.Application
-import com.cesoft.cesble.devices.globalModule
+import com.cesoft.cesble.device.bluetoothDIModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
 
-val appModule = module {
+val appDIModule = module {
     single { App() }
 }
 class App : Application() {
 
     companion object {
-        lateinit var instance: Application
+        //lateinit var instance: Application
     }
 
     override fun onCreate() {
         super.onCreate()
-        instance = this
+        //instance = this
         startKoin {
             androidContext(this@App)
-            modules(appModule)
-            modules(globalModule)
+            modules(appDIModule)
+            modules(bluetoothDIModule)
         }
     }
 }

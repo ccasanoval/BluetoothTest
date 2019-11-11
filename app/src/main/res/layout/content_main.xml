@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context=".MainActivity"
+    tools:context=".presenter.MainActivity"
     tools:showIn="@layout/activity_main">
 
     <Button
@@ -33,7 +33,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
-        android:text="@string/bluetooth_paired"
+        android:text="@string/bluetooth_scan_paired"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/btn_start_scan_le"
         app:layout_constraintTop_toTopOf="@+id/btn_start_scan_le" />

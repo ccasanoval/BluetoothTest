@@ -1,10 +1,21 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.cesoft.cesble.MainActivity">
-    <item
+    tools:context="com.cesoft.cesble.presenter.MainActivity">
+    <!-- item
         android:id="@+id/action_settings"
         android:orderInCategory="100"
         android:title="@string/action_settings"
+        app:showAsAction="never" / -->
+
+    <item
+        android:id="@+id/action_aina_spp"
+        android:orderInCategory="101"
+        android:title="@string/action_aina_spp"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_aina_ble"
+        android:orderInCategory="102"
+        android:title="@string/action_aina_ble"
         app:showAsAction="never" />
 </menu>
