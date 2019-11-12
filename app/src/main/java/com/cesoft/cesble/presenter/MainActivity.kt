@@ -1,6 +1,5 @@
 package com.cesoft.cesble.presenter
 
-import android.app.Activity
 import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -9,13 +8,10 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.content.Intent
-import android.util.Log
 import android.widget.Toast
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
-import android.bluetooth.BluetoothDevice
-import android.view.ContextMenu
 
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -27,7 +23,6 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
 
 import com.cesoft.cesble.R
-import android.view.ContextMenu.ContextMenuInfo
 
 
 
@@ -38,10 +33,8 @@ class MainActivity : AppCompatActivity(), MainPresenter.View {
     }
 
     // implements MainPresenter.View +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    override val app: Application
-        get() = application
-    override val ctx: Context
-        get() = this
+//    override val ctx: Context
+//        get() = this
     override lateinit var btnScanClassic: Button
     override lateinit var btnScanLowEnergy: Button
     override lateinit var btnPaired: Button
@@ -70,24 +63,7 @@ class MainActivity : AppCompatActivity(), MainPresenter.View {
     }
     override val broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            val action = intent.action
-
-Log.e(TAG, "broadcastReceiver:onReceive-----------------------------------------------------action=$action")
-
-            if (BluetoothDevice.ACTION_BOND_STATE_CHANGED == action) {
-                val state = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR)
-                val prevState = intent.getIntExtra(
-                    BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE,
-                    BluetoothDevice.ERROR
-                )
-Log.e(TAG, "broadcastReceiver:onReceive-----------------------------------------------------state=$state prevState=$prevState")//BOND_BONDED = 12;BOND_BONDING = 11;NONE=10
-
-                if (state == BluetoothDevice.BOND_BONDED && prevState == BluetoothDevice.BOND_BONDING) {
-                    Log.e(TAG, "broadcastReceiver:onReceive-----------------------------------------------------Paired")
-                } else if (state == BluetoothDevice.BOND_NONE && prevState == BluetoothDevice.BOND_BONDED) {
-                    Log.e(TAG, "broadcastReceiver:onReceive-----------------------------------------------------Unpaired")
-                }
-            }
+            presenter.onBroadcastReceiver(context, intent)
         }
     }
 
@@ -123,9 +99,8 @@ Log.e(TAG, "broadcastReceiver:onReceive-----------------------------------------
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            //R.id.action_settings -> true
-            //R.id.action_aina_spp -> ainaSppTest()
-            //R.id.action_aina_ble -> ainaBleTest()
+            R.id.action_bt_onoff -> presenter.switchBT()
+            R.id.action_bt_reset -> presenter.resetBT()
             else -> return super.onOptionsItemSelected(item)
         }
         return true
@@ -134,27 +109,4 @@ Log.e(TAG, "broadcastReceiver:onReceive-----------------------------------------
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         presenter.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
-
-
-/*
-    //----------------------------------------------------------------------------------------------
-    private fun ainaBleTest() {
-        presenter.ainBleTest()
-    }
-
-
-
-    //----------------------------------------------------------------------------------------------
-    //SPP
-    private fun ainaSppTest() {
-        presenter.setupSpp()
-        //val intent = Intent(applicationContext, DeviceList::class.java)
-        //startActivityForResult(intent, BluetoothState.REQUEST_CONNECT_DEVICE)
-    }
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode == Activity.RESULT_OK) {
-            presenter.onActivityResult(requestCode, data)
-        }
-    }*/
 }

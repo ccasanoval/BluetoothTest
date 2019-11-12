@@ -25,11 +25,11 @@ class BTDeviceAdapter(private val dataSet: ArrayList<BluetoothDevice>,
         //http://domoticx.com/bluetooth-class-of-device-lijst-cod/
         //bluetoothDevice.bluetoothClass.deviceClass == AUDIO_VIDEO_WEARABLE_HEADSET
         val headSet = if(dataSet[position].bluetoothClass.toString() == "240404") "*" else " "
-        val btType = when {
-            dataSet[position].type == DEVICE_TYPE_LE        -> "  LE > "
-            dataSet[position].type == DEVICE_TYPE_DUAL      -> "Dual > "
-            dataSet[position].type == DEVICE_TYPE_CLASSIC   -> "Clss > "
-            else                                            -> "  ?  > "
+        val btType = when(dataSet[position].type) {
+            DEVICE_TYPE_LE          -> "  LE > "
+            DEVICE_TYPE_DUAL        -> "Dual > "
+            DEVICE_TYPE_CLASSIC     -> "Clss > "
+            else                    -> "   ? > "
         }
         holder.textView.text = headSet + btType + dataSet[position].name
         holder.textView.tag = position

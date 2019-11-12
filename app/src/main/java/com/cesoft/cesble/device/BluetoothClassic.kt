@@ -37,12 +37,21 @@ class BluetoothClassic : KoinComponent {
                 if (BluetoothDevice.ACTION_FOUND == intent.action) {
                     val device: BluetoothDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)!!
 
+                    val type = when(device.type) {
+                        BluetoothDevice.DEVICE_TYPE_CLASSIC -> "Classic"
+                        BluetoothDevice.DEVICE_TYPE_LE -> "LowEnrgy"
+                        BluetoothDevice.DEVICE_TYPE_DUAL -> "Dual"
+                        else -> " ? "
+                    }
+
                     android.util.Log.e(TAG, "onDeviceFound---------------------------------------------------$device "
-                                +" : "+device.name
-                                +" : "+device.bluetoothClass
+                                +" : name="+device.name
+                                +" : address="+device.address
+                                +" : class="+device.bluetoothClass
+                                +" : type="+type
                                 +" : "+device.bluetoothClass.deviceClass       //AUDIO_VIDEO_WEARABLE_HEADSET
                                 +" : "+device.bluetoothClass.majorDeviceClass  //1024 = 0x400
-                                +" : "+device.type)
+                                )
 
                     if(device.name == null || device.name.isEmpty())return
                     if(dataSet.contains(device))return

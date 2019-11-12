@@ -2,13 +2,27 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.cesoft.cesble.presenter.MainActivity">
+    <item
+        android:id="@+id/action_bt_reset"
+        android:orderInCategory="100"
+        android:title="@string/action_bt_reset"
+        android:icon="@android:drawable/stat_sys_data_bluetooth"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_bt_onoff"
+        android:orderInCategory="101"
+        android:title="@string/action_bt_onoff"
+        android:icon="@android:drawable/stat_sys_data_bluetooth"
+        app:showAsAction="never" />
+
+
     <!-- item
         android:id="@+id/action_settings"
         android:orderInCategory="100"
         android:title="@string/action_settings"
         app:showAsAction="never" / -->
 
-    <item
+    <!-- item
         android:id="@+id/action_aina_spp"
         android:orderInCategory="101"
         android:title="@string/action_aina_spp"
@@ -17,5 +31,5 @@
         android:id="@+id/action_aina_ble"
         android:orderInCategory="102"
         android:title="@string/action_aina_ble"
-        app:showAsAction="never" />
+        app:showAsAction="never" /-->
 </menu>
