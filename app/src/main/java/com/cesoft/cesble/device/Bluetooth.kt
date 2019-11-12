@@ -2,6 +2,7 @@ package com.cesoft.cesble.device
 
 import android.bluetooth.*
 import android.content.Context
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -56,10 +57,9 @@ class Bluetooth : KoinComponent {
                 gattCallback: BluetoothGattCallback,
                 transport: Int=BluetoothDevice.TRANSPORT_LE): BluetoothGatt {
 
-android.util.Log.e(TAG, "connect-------------------------------------address=${device.address}, name=${device.name}, type=${device.type}")
-//DEVICE_TYPE_CLASSIC = 1
-//DEVICE_TYPE_LE = 2
-//DEVICE_TYPE_DUAL = 3
+Log.e(TAG, "connect-------------------------------------address=${device.address}, name=${device.name}, type=${device.type}")
+//DEVICE_TYPE_CLASSIC = 1       //DEVICE_TYPE_LE = 2        //DEVICE_TYPE_DUAL = 3
+
             return device.connectGatt(appContext, false, gattCallback, transport)
     }
     fun connect(device: BluetoothDevice): BluetoothGatt  {
@@ -67,31 +67,47 @@ android.util.Log.e(TAG, "connect-------------------------------------address=${d
             object : BluetoothGattCallback() {
                 override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
                     super.onConnectionStateChange(gatt, status, newState)
-                    android.util.Log.e(TAG, "connect:onConnectionStateChange-------------------------------------status=$status, newState=$newState")
+                    Log.e(TAG, "connect:onConnectionStateChange-------------------------------------status=$status, newState=$newState")
                     if(status == BluetoothProfile.STATE_CONNECTED)
-                        android.util.Log.e(TAG, "connect:onConnectionStateChange-------------------------------------STATE_CONNECTED")
+                        Log.e(TAG, "connect:onConnectionStateChange-------------------------------------STATE_CONNECTED")
                 }
             })
     }
+
+    /*fun listenBluetoothProfileHeadset() {
+        adapter?.getProfileProxy(appContext, object: BluetoothProfile.ServiceListener {
+            override fun onServiceDisconnected(profile: Int) {
+                Log.e(TAG, "onServiceDisconnected------------------------------------------------profile=$profile")
+            }
+            override fun onServiceConnected(profile: Int, proxy: BluetoothProfile?) {
+                //isHeadsetConnected = proxy!!.connectedDevices.size > 0
+                Log.e(TAG, "onServiceConnected------------------------------------------------profile=$profile #connectedDevices=${proxy!!.connectedDevices.size}")
+            }
+
+        }, BluetoothProfile.HEADSET)
+        //app.registerReceiver(view.broadcastReceiver, IntentFilter(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED))
+    }*/
 
 
     var headset: BluetoothHeadset? = null
     var device: BluetoothDevice? = null
     private val profileListener = object : BluetoothProfile.ServiceListener {
         override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
-            android.util.Log.e(TAG, "profileListener:onServiceConnected-------------------------------------$profile")
+            Log.e(TAG, "profileListener:onServiceConnected-------------------------------------$profile")
             if(profile == BluetoothProfile.HEADSET) {
                 headset = proxy as BluetoothHeadset
                 device = getConnectedHeadset()
+                Log.e(TAG, "profileListener:onServiceConnected-------------------------------------HEADSET: $device")
             }
         }
         override fun onServiceDisconnected(profile: Int) {
-            android.util.Log.e(TAG, "profileListener:onServiceDisconnected-------------------------------------$profile")
+            Log.e(TAG, "profileListener:onServiceDisconnected-------------------------------------$profile")
             if (profile == BluetoothProfile.HEADSET) {
                 headset = null
             }
         }
     }
+
     private fun getConnectedHeadset(): BluetoothDevice? {
         headset?.let {
             val devices = it.connectedDevices
@@ -100,6 +116,7 @@ android.util.Log.e(TAG, "connect-------------------------------------address=${d
             else null
         } ?: run { return null }
     }
+
     fun getProfileProxy() {
         adapter?.getProfileProxy(appContext, profileListener, BluetoothProfile.HEADSET)
     }

@@ -7,6 +7,7 @@ import org.koin.core.KoinComponent
 import org.koin.core.inject
 import java.util.*
 
+//https://interrupt.memfault.com/blog/bluetooth-low-energy-a-primer
 //https://medium.com/@martijn.van.welie/making-android-ble-work-part-2-47a3cdaade07
 object TestLE : KoinComponent {
 
@@ -21,17 +22,6 @@ object TestLE : KoinComponent {
         bluetoothGatt?.close()
         bluetoothGatt = bluetooth.connect(device, gattCallback)
         Log.e(TAG, "start--------------------------------------#services="+bluetoothGatt?.services?.size)
-/*
-        bluetoothGatt?.close()
-        bluetoothGatt = device.connectGatt(
-            context,
-            true,
-            gattCallback,
-            BluetoothDevice.TRANSPORT_LE)
-//            BluetoothDevice.TRANSPORT_BREDR)//--------status=133 newState=0
-//            BluetoothDevice.TRANSPORT_AUTO)//-------status=133 newState=0
-
-        Log.e(TAG, "start--------------------------------------#services="+bluetoothGatt?.services?.size)*/
     }
 
     private val gattCallback = object : BluetoothGattCallback() {

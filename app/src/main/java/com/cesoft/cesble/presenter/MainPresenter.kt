@@ -54,15 +54,16 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
         fun alert(id: Int)
         fun alertDialog(title: Int, message: Int, listener: YesNoListener?)
     }
+
     interface YesNoListener {
         fun onYes()
         fun onNo()
     }
 
     private val app: Application by inject()
-    private val bluetooth : Bluetooth by inject()
-    private val bluetoothClassic : BluetoothClassic by inject()
-    private val bluetoothLE : BluetoothLE by inject()
+    private val bluetooth: Bluetooth by inject()
+    private val bluetoothClassic: BluetoothClassic by inject()
+    private val bluetoothLE: BluetoothLE by inject()
 
 
     // if <uses-feature android:name="android.hardware.bluetooth_le" android:required=" F A L S E "/>
@@ -83,21 +84,46 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
     init {
         checkPermissionsForBluetoothLowEnergy()
 
-        isLowEnergyEnabled = app.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)
-        if( ! isLowEnergyEnabled) {
+        isLowEnergyEnabled =
+            app.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)
+        if (!isLowEnergyEnabled) {
             view.alert(R.string.bluetooth_low_energy_not_supported)
             Log.e(TAG, "INIT------------------------------------bluetooth_low_energy_not_supported")
         }
 
         //onBroadcastReceiver
-        app.registerReceiver(view.broadcastReceiver, IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED))
-        app.registerReceiver(view.broadcastReceiver, IntentFilter(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED))
-        app.registerReceiver(view.broadcastReceiver, IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED))
-        app.registerReceiver(view.broadcastReceiver, IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED))
-        app.registerReceiver(view.broadcastReceiver, IntentFilter(BluetoothAdapter.ACTION_LOCAL_NAME_CHANGED))
-        app.registerReceiver(view.broadcastReceiver, IntentFilter(BluetoothAdapter.ACTION_REQUEST_ENABLE))
-        app.registerReceiver(view.broadcastReceiver, IntentFilter(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE))
-        app.registerReceiver(view.broadcastReceiver, IntentFilter(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED))
+        app.registerReceiver(
+            view.broadcastReceiver,
+            IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
+        )
+        app.registerReceiver(
+            view.broadcastReceiver,
+            IntentFilter(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED)
+        )
+        app.registerReceiver(
+            view.broadcastReceiver,
+            IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED)
+        )
+        app.registerReceiver(
+            view.broadcastReceiver,
+            IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
+        )
+        app.registerReceiver(
+            view.broadcastReceiver,
+            IntentFilter(BluetoothAdapter.ACTION_LOCAL_NAME_CHANGED)
+        )
+        app.registerReceiver(
+            view.broadcastReceiver,
+            IntentFilter(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+        )
+        app.registerReceiver(
+            view.broadcastReceiver,
+            IntentFilter(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE)
+        )
+        app.registerReceiver(
+            view.broadcastReceiver,
+            IntentFilter(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED)
+        )
 
         enableAllUI()
 
@@ -121,12 +147,14 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
         }
         view.btnScanStop.setOnClickListener {
             if (bluetooth.isEnabled) {
-                Log.e(TAG, "btnScanStop.setOnClickListener: Stop Scan---------------------------------------------")
+                Log.e(
+                    TAG,
+                    "btnScanStop.setOnClickListener: Stop Scan---------------------------------------------"
+                )
                 bluetoothClassic.stopScan()
                 bluetoothLE.stopScan()
                 enableAllUI()
-            }
-            else
+            } else
                 view.alert(R.string.bluetooth_disabled)
         }
     }
@@ -136,88 +164,109 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
     // ADAPTER CLICK LISTENERS
     //----------------------------------------------------------------------------------------------
     private val pairedClickListener = android.view.View.OnClickListener {
-        val adapter =  viewAdapter as BTDeviceAdapter
+        val adapter = viewAdapter as BTDeviceAdapter
         val device = adapter.getItemAt(it.tag as Int)
-        Log.e(TAG, "pairedClickListener--------------tag=${it.tag}---------------------------device=$device")
+        Log.e(
+            TAG,
+            "pairedClickListener--------------tag=${it.tag}---------------------------device=$device"
+        )
         bluetooth.connect(device)
-        listenBluetoothProfileHeadset()
         bluetooth.getProfileProxy()
     }
     private val classicClickListener = android.view.View.OnClickListener {
-        val adapter =  viewAdapter as BTDeviceAdapter
+        val adapter = viewAdapter as BTDeviceAdapter
         val device = adapter.getItemAt(it.tag as Int)
         Log.e(TAG, "classicClickListener----${it.tag}-------------------------$device")
         askToPair(device)
     }
     private val lowEnergyClickListener = android.view.View.OnClickListener {
-        val adapter =  viewAdapter as BTLEDeviceAdapter
-        Log.e(TAG, "lowEnergyClickListener----${it.tag}-----------------------"+adapter.getItemAt(it.tag as Int))
+        val adapter = viewAdapter as BTLEDeviceAdapter
+        Log.e(
+            TAG,
+            "lowEnergyClickListener----${it.tag}-----------------------" + adapter.getItemAt(it.tag as Int)
+        )
     }
 
     //----------------------------------------------------------------------------------------------
     // ADAPTER CONTEXT MENU LISTENERS
     //----------------------------------------------------------------------------------------------
-    private val pairedContextMenuListener = android.view.View.OnCreateContextMenuListener {
-            contextMenu: ContextMenu, view: android.view.View, contextMenuInfo: ContextMenu.ContextMenuInfo? ->
-        val adapter =  viewAdapter as BTDeviceAdapter
-        Log.e(TAG, "pairedContextMenuListener----${view.tag}-----------------------"+adapter.getItemAt(view.tag as Int))
-        contextMenu.setHeaderTitle("Test on Paired Devices")
-        contextMenu.add(0, view.id, 0, "SPP").setOnMenuItemClickListener {
-            TestSPP(view.context).start(adapter.getItemAt(view.tag as Int))
-            true
-        }//groupId, itemId, order, title
-        contextMenu.add(0, view.id, 0, "LE").setOnMenuItemClickListener {
-            TestLE.start(adapter.getItemAt(view.tag as Int))
-            true
+    private val pairedContextMenuListener =
+        android.view.View.OnCreateContextMenuListener { contextMenu: ContextMenu, view: android.view.View, contextMenuInfo: ContextMenu.ContextMenuInfo? ->
+            val adapter = viewAdapter as BTDeviceAdapter
+            Log.e(
+                TAG,
+                "pairedContextMenuListener----${view.tag}-----------------------" + adapter.getItemAt(
+                    view.tag as Int
+                )
+            )
+            contextMenu.setHeaderTitle("Test on Paired Devices")
+            contextMenu.add(0, view.id, 0, "SPP").setOnMenuItemClickListener {
+                TestSPP(view.context).start(adapter.getItemAt(view.tag as Int))
+                true
+            }//groupId, itemId, order, title
+            contextMenu.add(0, view.id, 0, "LE").setOnMenuItemClickListener {
+                TestLE.start(adapter.getItemAt(view.tag as Int))
+                true
+            }
         }
-    }
-    private val classicContextMenuListener = android.view.View.OnCreateContextMenuListener {
-            contextMenu: ContextMenu, view: android.view.View, contextMenuInfo: ContextMenu.ContextMenuInfo? ->
-        val adapter =  viewAdapter as BTDeviceAdapter
-        Log.e(TAG, "classicContextMenuListener----${view.tag}-----------------------"+adapter.getItemAt(view.tag as Int))
-        contextMenu.setHeaderTitle("Test on BT Devices")
-        contextMenu.add(0, view.id, 0, "SPP").setOnMenuItemClickListener {
-            TestSPP(view.context).start(adapter.getItemAt(view.tag as Int))
-            true
-        }//groupId, itemId, order, title
-        contextMenu.add(0, view.id, 0, "LE").setOnMenuItemClickListener {
-            TestLE.start(adapter.getItemAt(view.tag as Int))
-            true
+    private val classicContextMenuListener =
+        android.view.View.OnCreateContextMenuListener { contextMenu: ContextMenu, view: android.view.View, contextMenuInfo: ContextMenu.ContextMenuInfo? ->
+            val adapter = viewAdapter as BTDeviceAdapter
+            Log.e(
+                TAG,
+                "classicContextMenuListener----${view.tag}-----------------------" + adapter.getItemAt(
+                    view.tag as Int
+                )
+            )
+            contextMenu.setHeaderTitle("Test on BT Devices")
+            contextMenu.add(0, view.id, 0, "SPP").setOnMenuItemClickListener {
+                TestSPP(view.context).start(adapter.getItemAt(view.tag as Int))
+                true
+            }//groupId, itemId, order, title
+            contextMenu.add(0, view.id, 0, "LE").setOnMenuItemClickListener {
+                TestLE.start(adapter.getItemAt(view.tag as Int))
+                true
+            }
         }
-    }
-    private val leContextMenuListener = android.view.View.OnCreateContextMenuListener {
-            contextMenu: ContextMenu, view: android.view.View, contextMenuInfo: ContextMenu.ContextMenuInfo? ->
-        val adapter =  viewAdapter as BTLEDeviceAdapter
-        Log.e(TAG, "leContextMenuListener----${view.tag}-----------------------"+adapter.getItemAt(view.tag as Int))
-        contextMenu.setHeaderTitle("Test on LE BT Devices")
-        contextMenu.add(0, view.id, 0, "SPP").setOnMenuItemClickListener {
-            TestSPP(view.context).start(adapter.getItemAt(view.tag as Int).device)
-            true
-        }//groupId, itemId, order, title
-        contextMenu.add(0, view.id, 0, "LE").setOnMenuItemClickListener {
-            TestLE.start(adapter.getItemAt(view.tag as Int).device)
-            true
+    private val leContextMenuListener =
+        android.view.View.OnCreateContextMenuListener { contextMenu: ContextMenu, view: android.view.View, contextMenuInfo: ContextMenu.ContextMenuInfo? ->
+            val adapter = viewAdapter as BTLEDeviceAdapter
+            Log.e(
+                TAG,
+                "leContextMenuListener----${view.tag}-----------------------" + adapter.getItemAt(
+                    view.tag as Int
+                )
+            )
+            contextMenu.setHeaderTitle("Test on LE BT Devices")
+            contextMenu.add(0, view.id, 0, "SPP").setOnMenuItemClickListener {
+                TestSPP(view.context).start(adapter.getItemAt(view.tag as Int).device)
+                true
+            }//groupId, itemId, order, title
+            contextMenu.add(0, view.id, 0, "LE").setOnMenuItemClickListener {
+                TestLE.start(adapter.getItemAt(view.tag as Int).device)
+                true
+            }
         }
-    }
 
     fun onResume() {
         turnOnBluetooth()
     }
 
     private fun turnOnBluetooth() {
-        if(bluetooth.isDisabled) {
+        if (bluetooth.isDisabled) {
             disableAllUI()
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             view.startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
-        }
-        else if( ! isScanning) {
+        } else if (!isScanning) {
             enableAllUI()
         }
     }
+
     //----------------------------------------------------------------------------------------------
     fun switchBT() {
         bluetooth.switchOnOf()
     }
+
     fun resetBT() {
         bluetooth.reset()
     }
@@ -225,13 +274,19 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
     //----------------------------------------------------------------------------------------------
     fun onBroadcastReceiver(context: Context, intent: Intent) {
         val action = intent.action
-        Log.e(TAG, "onBroadcastReceiver-----------------------------------------------------action=$action")
+        Log.e(
+            TAG,
+            "onBroadcastReceiver-----------------------------------------------------action=$action"
+        )
 
-        when(action) {
+        when (action) {
             BluetoothAdapter.ACTION_STATE_CHANGED -> {
                 val state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
-                Log.e(TAG, "ACTION_STATE_CHANGED-----------------------------------------------------$state")
-                when(state) {
+                Log.e(
+                    TAG,
+                    "ACTION_STATE_CHANGED-----------------------------------------------------$state"
+                )
+                when (state) {
                     BluetoothAdapter.STATE_ON -> {
                         enableAllUI()
                         view.txtStatus.text = "On"
@@ -250,17 +305,27 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
 
             }
             BluetoothDevice.ACTION_BOND_STATE_CHANGED -> {
-                val state = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR)
+                val state =
+                    intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR)
                 val prevState = intent.getIntExtra(
                     BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE,
                     BluetoothDevice.ERROR
                 )
-                Log.e(TAG, "broadcastReceiver:onReceive-----------------------------------------------------state=$state prevState=$prevState")//BOND_BONDED = 12;BOND_BONDING = 11;NONE=10
+                Log.e(
+                    TAG,
+                    "broadcastReceiver:onReceive-----------------------------------------------------state=$state prevState=$prevState"
+                )//BOND_BONDED = 12;BOND_BONDING = 11;NONE=10
 
                 if (state == BluetoothDevice.BOND_BONDED && prevState == BluetoothDevice.BOND_BONDING) {
-                    Log.e(TAG, "broadcastReceiver:onReceive-----------------------------------------------------Paired")
+                    Log.e(
+                        TAG,
+                        "broadcastReceiver:onReceive-----------------------------------------------------Paired"
+                    )
                 } else if (state == BluetoothDevice.BOND_NONE && prevState == BluetoothDevice.BOND_BONDED) {
-                    Log.e(TAG, "broadcastReceiver:onReceive-----------------------------------------------------Unpaired")
+                    Log.e(
+                        TAG,
+                        "broadcastReceiver:onReceive-----------------------------------------------------Unpaired"
+                    )
                 }
             }
         }
@@ -275,13 +340,18 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
         view.btnPaired.isEnabled = false
         view.btnScanStop.isEnabled = false
     }
+
     private fun enableAllUI() {
         view.btnScanClassic.isEnabled = true
         view.btnScanLowEnergy.isEnabled = true
         view.btnPaired.isEnabled = true
         view.btnScanStop.isEnabled = false
-Log.e(TAG, "enableAllUI-------------------------------------------------------------------------------------")
+        Log.e(
+            TAG,
+            "enableAllUI-------------------------------------------------------------------------------------"
+        )
     }
+
     @Synchronized
     private fun stopClassicScanUI() {
         view.btnScanClassic.isEnabled = true
@@ -290,8 +360,12 @@ Log.e(TAG, "enableAllUI---------------------------------------------------------
         view.btnScanStop.isEnabled = false
         //
         view.txtStatus.text = ""
-Log.e(TAG, "stopClassicScanUI-------------------------------------------------------------------------------------")
+        Log.e(
+            TAG,
+            "stopClassicScanUI-------------------------------------------------------------------------------------"
+        )
     }
+
     private fun startClassicScanUI() {
         view.btnScanClassic.isEnabled = false
         //view.btnScanLowEnergy.isEnabled = true
@@ -299,8 +373,12 @@ Log.e(TAG, "stopClassicScanUI---------------------------------------------------
         view.btnScanStop.isEnabled = true
         //
         view.txtStatus.text = textScanning
-Log.e(TAG, "startClassicScanUI-------------------------------------------------------------------------------------")
+        Log.e(
+            TAG,
+            "startClassicScanUI-------------------------------------------------------------------------------------"
+        )
     }
+
     private fun startScanLEUI() {
         //view.btnScanClassic.isEnabled = true
         view.btnScanLowEnergy.isEnabled = false
@@ -308,9 +386,11 @@ Log.e(TAG, "startClassicScanUI--------------------------------------------------
         view.btnScanStop.isEnabled = true
         //
         view.txtStatus.text = textScanning
-Log.e(TAG, "startScanLEUI-------------------------------------------------------------------------------------")
+        Log.e(
+            TAG,
+            "startScanLEUI-------------------------------------------------------------------------------------"
+        )
     }
-
 
 
     //----------------------------------------------------------------------------------------------
@@ -325,18 +405,20 @@ Log.e(TAG, "startScanLEUI-------------------------------------------------------
             override fun onDeviceFound(bluetoothDevice: BluetoothDevice) {
 
                 //if(::viewAdapter.isInitialized && viewAdapter is BTDeviceAdapter) {
-                if(isNewScanClassic) {
-                    viewAdapter = BTDeviceAdapter(arrayListOf(bluetoothDevice),
+                if (isNewScanClassic) {
+                    viewAdapter = BTDeviceAdapter(
+                        arrayListOf(bluetoothDevice),
                         classicClickListener,
-                        classicContextMenuListener)
+                        classicContextMenuListener
+                    )
                     isNewScanClassic = false
-                }
-                else if(::viewAdapter.isInitialized) {
+                } else if (::viewAdapter.isInitialized) {
                     (viewAdapter as BTDeviceAdapter).add(bluetoothDevice)
                     viewAdapter.notifyDataSetChanged()
                 }
                 view.listDevices.adapter = viewAdapter
             }
+
             override fun onDiscoveryFinished() {
                 stopClassicScanUI()
             }
@@ -345,7 +427,6 @@ Log.e(TAG, "startScanLEUI-------------------------------------------------------
         startClassicScanUI()
         isScanning = true
     }
-
 
 
     //----------------------------------------------------------------------------------------------
@@ -357,18 +438,19 @@ Log.e(TAG, "startScanLEUI-------------------------------------------------------
         startScanLEUI()
         isScanning = true
     }
+
     // Callback
-    private val callback = object: BluetoothLE.Callback {
+    private val callback = object : BluetoothLE.Callback {
         override fun onBatchScanResults(results: List<ScanResult>) {
             viewAdapter = BTLEDeviceAdapter(results, lowEnergyClickListener, leContextMenuListener)
             view.listDevices.adapter = viewAdapter
         }
+
         override fun onScanFailed(errorCode: Int) {
             view.txtStatus.text = "onScanFailed errorCode=$errorCode"
             view.listDevices.adapter = viewAdapter
         }
     }
-
 
 
     //----------------------------------------------------------------------------------------------
@@ -383,22 +465,26 @@ Log.e(TAG, "startScanLEUI-------------------------------------------------------
             view.listDevices.adapter = viewAdapter
         }
     }
+
     private fun askToPair(device: BluetoothDevice) {
         //TODO: ask user if wants to pair the device first?
         Log.e(TAG, "askToPair------------------------------------------------$device")
-        view.alertDialog(R.string.bluetooth_pairing_tle, R.string.bluetooth_pairing_msg, object : YesNoListener {
-            override fun onNo() {
-                view.txtStatus.text = ""
-            }
-            override fun onYes() {
-                if(device.createBond())
-                    view.txtStatus.text = textPaired
-                else
-                    view.txtStatus.text = textPairedError
-            }
-        })
-    }
+        view.alertDialog(
+            R.string.bluetooth_pairing_tle,
+            R.string.bluetooth_pairing_msg,
+            object : YesNoListener {
+                override fun onNo() {
+                    view.txtStatus.text = ""
+                }
 
+                override fun onYes() {
+                    if (device.createBond())
+                        view.txtStatus.text = textPaired
+                    else
+                        view.txtStatus.text = textPairedError
+                }
+            })
+    }
 
 
     //----------------------------------------------------------------------------------------------
@@ -406,7 +492,7 @@ Log.e(TAG, "startScanLEUI-------------------------------------------------------
     //----------------------------------------------------------------------------------------------
     private fun checkPermissionsForBluetoothLowEnergy() {
         Log.e("Main", "checkPermissionsForBLE---------------------------------------------------")
-        if(app.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (app.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             view.alertDialog(
                 R.string.location_permission_tle,
                 R.string.location_permission_msg,
@@ -414,17 +500,24 @@ Log.e(TAG, "startScanLEUI-------------------------------------------------------
                     override fun onNo() {
                         view.alert(R.string.location_permission_err)
                     }
+
                     override fun onYes() {
-                        view.requestPermissions2(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), PERMISSION_REQUEST_LOCATION)
+                        view.requestPermissions2(
+                            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                            PERMISSION_REQUEST_LOCATION
+                        )
                     }
 
                 })
-        }
-        else
+        } else
             turnOnBluetooth()
     }
 
-    fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+    fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
         when (requestCode) {
             PERMISSION_REQUEST_LOCATION -> {
                 if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
@@ -437,24 +530,5 @@ Log.e(TAG, "startScanLEUI-------------------------------------------------------
     }
 
 
-
-    //----------------------------------------------------------------------------------------------
-    // HEADSET
-    //----------------------------------------------------------------------------------------------
-    private fun listenBluetoothProfileHeadset() {
-        val bluetoothManager = app.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        bluetoothManager.adapter.getProfileProxy(app, object: BluetoothProfile.ServiceListener {
-            override fun onServiceDisconnected(profile: Int) {
-                Log.e(TAG, "onServiceDisconnected------------------------------------------------profile=$profile")
-            }
-            override fun onServiceConnected(profile: Int, proxy: BluetoothProfile?) {
-                //isHeadsetConnected = proxy!!.connectedDevices.size > 0
-                Log.e(TAG, "onServiceConnected------------------------------------------------profile=$profile #connectedDevices=${proxy!!.connectedDevices.size}")
-            }
-
-        }, BluetoothProfile.HEADSET)
-
-        app.registerReceiver(view.broadcastReceiver, IntentFilter(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED))
-    }
-
 }
+
