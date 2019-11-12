@@ -43,9 +43,9 @@ class BluetoothLE : KoinComponent {
         //bluetoothAdapter?.bluetoothLeScanner?.startScan(callbackStart)
     }
     fun stopScan() {
-        android.util.Log.e("BTLE", "stopScan---------------------------------------------$isLowEnergyEnabled $callback ")
+        android.util.Log.e(TAG, "stopScan---------------------------------------------$isLowEnergyEnabled $callback ")
         if(isLowEnergyEnabled && callback != null) {
-            android.util.Log.e("BTLE", "stopScan--------------------------------------------6666-"+bluetooth.adapter?.bluetoothLeScanner)
+            android.util.Log.e(TAG, "stopScan--------------------------------------------6666-"+bluetooth.adapter?.bluetoothLeScanner)
             bluetooth.adapter?.bluetoothLeScanner?.stopScan(scanCallback)
             callback = null
         }

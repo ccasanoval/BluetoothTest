@@ -9,7 +9,9 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.cesoft.cesble.R
 
-class BTDeviceAdapter(private val dataSet: ArrayList<BluetoothDevice>, private val onClickListener: View.OnClickListener)
+class BTDeviceAdapter(private val dataSet: ArrayList<BluetoothDevice>,
+                      private val onClickListener: View.OnClickListener,
+                      private val onCreateContextMenuListener: View.OnCreateContextMenuListener)
     : RecyclerView.Adapter<BTViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BTViewHolder {
@@ -32,6 +34,7 @@ class BTDeviceAdapter(private val dataSet: ArrayList<BluetoothDevice>, private v
         holder.textView.text = headSet + btType + dataSet[position].name
         holder.textView.tag = position
         holder.textView.setOnClickListener(onClickListener)
+        holder.textView.setOnCreateContextMenuListener(onCreateContextMenuListener)
     }
 
     override fun getItemCount() = dataSet.size

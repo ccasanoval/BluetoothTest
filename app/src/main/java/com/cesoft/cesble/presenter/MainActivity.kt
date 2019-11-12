@@ -15,6 +15,7 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import android.bluetooth.BluetoothDevice
+import android.view.ContextMenu
 
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -26,6 +27,8 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
 
 import com.cesoft.cesble.R
+import android.view.ContextMenu.ContextMenuInfo
+
 
 
 class MainActivity : AppCompatActivity(), MainPresenter.View {
@@ -101,7 +104,6 @@ Log.e(TAG, "broadcastReceiver:onReceive-----------------------------------------
 
         btnScanClassic = btn_start_scan_classic
         btnScanLowEnergy = btn_start_scan_le
-        //btnScanStop = btn_stop_scan
         btnPaired = btn_paired
         btnScanStop = fab_stop_scanning
         txtStatus = txt_status
@@ -122,8 +124,8 @@ Log.e(TAG, "broadcastReceiver:onReceive-----------------------------------------
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             //R.id.action_settings -> true
-            R.id.action_aina_spp -> ainaSppTest()
-            R.id.action_aina_ble -> ainaBleTest()
+            //R.id.action_aina_spp -> ainaSppTest()
+            //R.id.action_aina_ble -> ainaBleTest()
             else -> return super.onOptionsItemSelected(item)
         }
         return true
@@ -134,7 +136,7 @@ Log.e(TAG, "broadcastReceiver:onReceive-----------------------------------------
     }
 
 
-
+/*
     //----------------------------------------------------------------------------------------------
     private fun ainaBleTest() {
         presenter.ainBleTest()
@@ -154,7 +156,5 @@ Log.e(TAG, "broadcastReceiver:onReceive-----------------------------------------
         if (resultCode == Activity.RESULT_OK) {
             presenter.onActivityResult(requestCode, data)
         }
-    }
-
-
+    }*/
 }

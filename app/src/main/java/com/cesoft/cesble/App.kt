@@ -8,6 +8,7 @@ import org.koin.dsl.module
 
 val appDIModule = module {
     single { App() }
+    //single { androidContext() }
 }
 class App : Application() {
 

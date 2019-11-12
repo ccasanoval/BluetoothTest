@@ -8,7 +8,11 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.cesoft.cesble.R
 
-class BTLEDeviceAdapter(private val dataSet: List<ScanResult>, private val onClickListener: View.OnClickListener)
+
+
+class BTLEDeviceAdapter(private val dataSet: List<ScanResult>,
+                        private val onClickListener: View.OnClickListener,
+                        private val onCreateContextMenuListener: View.OnCreateContextMenuListener)
     : RecyclerView.Adapter<BTViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BTViewHolder {
@@ -21,9 +25,11 @@ class BTLEDeviceAdapter(private val dataSet: List<ScanResult>, private val onCli
         val headSet = if(dataSet[position].device.bluetoothClass.deviceClass.toString() == "240404") "*" else " "
         val btType = "LE > "
         holder.textView.text = headSet + btType + dataSet[position].scanRecord?.deviceName
-android.util.Log.e("TAG", "onBindViewHolder------------------------------------------------------"+dataSet[position].scanRecord?.deviceName+", "+dataSet[position].device.name)
+android.util.Log.e("BTLEDeviceAdapter", "onBindViewHolder------------------------------------------------------"+dataSet[position].scanRecord?.deviceName+", "+dataSet[position].device.name)
         holder.textView.tag = position
         holder.textView.setOnClickListener(onClickListener)
+        holder.textView.setOnCreateContextMenuListener(onCreateContextMenuListener)
+
     }
 
     override fun getItemCount() = dataSet.size
