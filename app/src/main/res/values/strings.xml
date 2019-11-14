@@ -4,14 +4,23 @@
     <string name="action_settings">Settings</string>
     <string name="action_bt_onoff">BT On/Off</string>
     <string name="action_bt_reset">BT Reset</string>
+    <string name="action_sound">Sound</string>
+    <string name="action_sound_stop">Stop Sound</string>
     <string name="action_aina_spp">SPP test</string>
     <string name="action_aina_ble">AINA BLE test</string>
 
+    <string name="state_disabled">Disabled</string>
+    <string name="state_scanning">Scanning…</string>
+    <string name="state_connecting">Connecting…</string>
+    <string name="state_disconnecting">Disconnecting…</string>
+    <string name="state_connected">Connected</string>
+    <string name="state_disconnected">Disconnected</string>
+    <string name="state_turning_off">Turning Off…</string>
+    <string name="state_turning_on">Turning On…</string>
+
     <string name="bluetooth_disabled">Bluetooth is not enabled</string>
-    <string name="bluetooth_scanning">Scanning…</string>
-    <string name="bluetooth_connecting">Connecting…</string>
-    <string name="bluetooth_disconnecting">Disconnecting…</string>
-    <string name="bluetooth_low_energy_not_supported">Bluetooth Low Energy is not supported !</string>
+    <string name="bluetooth_low_energy_not_supported">Bluetooth Low Energy is not supported!</string>
+    <string name="bluetooth_low_energy_not">This device is not Low Energy!</string>
 
     <string name="bluetooth_scan_classic">Classic Scan</string>
     <string name="bluetooth_scan_low_energy">Low Energy Scan</string>

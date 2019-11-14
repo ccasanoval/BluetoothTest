@@ -101,6 +101,8 @@ class MainActivity : AppCompatActivity(), MainPresenter.View {
         when (item.itemId) {
             R.id.action_bt_onoff -> presenter.switchBT()
             R.id.action_bt_reset -> presenter.resetBT()
+            R.id.action_sound -> presenter.playSound()
+            R.id.action_sound_stop -> presenter.stopSound()
             else -> return super.onOptionsItemSelected(item)
         }
         return true

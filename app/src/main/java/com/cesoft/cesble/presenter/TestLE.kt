@@ -18,9 +18,12 @@ object TestLE : KoinComponent {
     private var characteristic: BluetoothGattCharacteristic? = null
 
     fun start(device: BluetoothDevice) {
+        if(device.type != BluetoothDevice.DEVICE_TYPE_LE && device.type != BluetoothDevice.DEVICE_TYPE_DUAL) {
+            Log.e(TAG,"************ This device is not LE so connecting by GATT won't work ************")
+        }
         bluetoothGatt?.disconnect()
         bluetoothGatt?.close()
-        bluetoothGatt = bluetooth.connect(device, gattCallback)
+        bluetoothGatt = bluetooth.connectGatt(device, gattCallback)
         Log.e(TAG, "start--------------------------------------#services="+bluetoothGatt?.services?.size)
     }
 
