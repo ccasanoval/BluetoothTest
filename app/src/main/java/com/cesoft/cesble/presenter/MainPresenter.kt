@@ -2,28 +2,32 @@ package com.cesoft.cesble.presenter
 
 import android.Manifest
 import android.app.Application
-import android.bluetooth.le.ScanResult
-import android.content.*
-import android.content.pm.PackageManager
-import android.widget.Button
-import android.widget.TextView
-import androidx.recyclerview.widget.RecyclerView
-import androidx.lifecycle.ViewModel
-import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothAdapter
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import android.content.IntentFilter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.le.ScanResult
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.media.AudioManager
 import android.util.Log
 import android.view.ContextMenu
+import android.widget.Button
+import android.widget.TextView
+import androidx.lifecycle.ViewModel
+import androidx.recyclerview.widget.RecyclerView
+import com.cesoft.cesble.R
 import com.cesoft.cesble.adapter.BTDeviceAdapter
 import com.cesoft.cesble.adapter.BTLEDeviceAdapter
-import com.cesoft.cesble.R
 import com.cesoft.cesble.adapter.BTViewHolder
-import com.cesoft.cesble.device.*
+import com.cesoft.cesble.device.Audio
+import com.cesoft.cesble.device.Bluetooth
+import com.cesoft.cesble.device.BluetoothClassic
+import com.cesoft.cesble.device.BluetoothLE
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import org.koin.core.KoinComponent
 import org.koin.core.inject
-import kotlin.collections.ArrayList
 
 
 //TODO: https://developer.android.com/reference/android/bluetooth/BluetoothHeadset
@@ -35,8 +39,9 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
 
     companion object {
         private val TAG = MainPresenter::class.java.simpleName
-        private const val PERMISSION_REQUEST_LOCATION = 6969
         private const val REQUEST_ENABLE_BT = 6968
+        private const val PERMISSION_REQUEST_LOCATION = 6969
+        private const val PERMISSION_REQUEST_AUDIO_RECORD = 6970
     }
 
     interface View {
@@ -46,7 +51,7 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
         val btnScanStop: FloatingActionButton
         val txtStatus: TextView
         val listDevices: RecyclerView
-        val broadcastReceiver: BroadcastReceiver
+        //val broadcastReceiver: BroadcastReceiver
         fun startActivityForResult(intent: Intent, requestCode: Int)
         fun requestPermissions2(permissions: Array<String>, requestCode: Int)
         fun alert(id: Int)
@@ -62,6 +67,7 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
     private val bluetooth: Bluetooth by inject()
     private val bluetoothClassic: BluetoothClassic by inject()
     private val bluetoothLE: BluetoothLE by inject()
+    private val audio: Audio by inject()
 
     private lateinit var viewAdapter: RecyclerView.Adapter<BTViewHolder>
     // if <uses-feature android:name="android.hardware.bluetooth_le" android:required=" F A L S E "/>
@@ -83,8 +89,14 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
     //----------------------------------------------------------------------------------------------
     // INIT
     //----------------------------------------------------------------------------------------------
+    private val broadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            onBroadcastReceiver(intent)
+        }
+    }
     init {
-        checkPermissionsForBluetoothLowEnergy()
+        if(checkPermissionsForBluetoothLowEnergy())
+            turnOnBluetooth()
 
         isLowEnergyEnabled =
             app.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)
@@ -94,14 +106,20 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
         }
 
         //onBroadcastReceiver
-        app.registerReceiver(view.broadcastReceiver,IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED))
-        app.registerReceiver(view.broadcastReceiver,IntentFilter(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED))
-        app.registerReceiver(view.broadcastReceiver,IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED))
-        app.registerReceiver(view.broadcastReceiver,IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED))
-        app.registerReceiver(view.broadcastReceiver,IntentFilter(BluetoothAdapter.ACTION_LOCAL_NAME_CHANGED))
-        app.registerReceiver(view.broadcastReceiver,IntentFilter(BluetoothAdapter.ACTION_REQUEST_ENABLE))
-        app.registerReceiver(view.broadcastReceiver,IntentFilter(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE))
-        app.registerReceiver(view.broadcastReceiver,IntentFilter(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED))
+        app.registerReceiver(broadcastReceiver,IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED))
+        app.registerReceiver(broadcastReceiver,IntentFilter(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED))
+        app.registerReceiver(broadcastReceiver,IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED))
+        app.registerReceiver(broadcastReceiver,IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED))
+        app.registerReceiver(broadcastReceiver,IntentFilter(BluetoothAdapter.ACTION_LOCAL_NAME_CHANGED))
+        app.registerReceiver(broadcastReceiver,IntentFilter(BluetoothAdapter.ACTION_REQUEST_ENABLE))
+        app.registerReceiver(broadcastReceiver,IntentFilter(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE))
+        app.registerReceiver(broadcastReceiver,IntentFilter(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED))
+
+        app.registerReceiver(broadcastReceiver,IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
+        app.registerReceiver(broadcastReceiver,IntentFilter(AudioManager.ACTION_HEADSET_PLUG))
+        app.registerReceiver(broadcastReceiver,IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED))
+        if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q)
+            app.registerReceiver(broadcastReceiver,IntentFilter(AudioManager.ACTION_SPEAKERPHONE_STATE_CHANGED))
 
         enableAllUI()
 
@@ -132,6 +150,10 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
             } else
                 view.alert(R.string.bluetooth_disabled)
         }
+    }
+
+    fun onDestroy() {
+        app.unregisterReceiver(broadcastReceiver)
     }
 
 
@@ -230,38 +252,70 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
     }
 
     //----------------------------------------------------------------------------------------------
+    /// Bluetooth
     fun switchBT() {
-        bluetooth.switchOnOf()
+        //if(checkPermissionsForBluetoothLowEnergy())
+            bluetooth.switchOnOf()
     }
     fun resetBT() {
-        bluetooth.reset()
+        if(checkPermissionsForBluetoothLowEnergy())
+            bluetooth.reset()
     }
-    fun playSound() {
-        bluetooth.playSound()
+    /// Audio
+    fun playMusic() {
+        if(checkPermissionsForAudioRecording())
+            audio.playMusic()
+    }
+    fun startRecordingAudio() {
+        if(checkPermissionsForAudioRecording())
+            audio.startRecording()
+    }
+    fun stopRecordingAudio() {
+        if(checkPermissionsForAudioRecording())
+            audio.stopRecording()
+    }
+    fun playAudio() {
+        if(checkPermissionsForAudioRecording())
+            audio.playAudio()
     }
     fun stopSound() {
-        bluetooth.stopSound()
+        if(checkPermissionsForAudioRecording())
+            audio.stop()
     }
 
     //----------------------------------------------------------------------------------------------
-    fun onBroadcastReceiver(context: Context, intent: Intent) {
-        val action = intent.action
-        Log.e(TAG,"onBroadcastReceiver-----------------------------------------------------action=$action")
+    fun onBroadcastReceiver(intent: Intent) {
+        when (val action = intent.action) {
 
-        when (action) {
+            /// AudioManager ///
+            AudioManager.ACTION_AUDIO_BECOMING_NOISY -> {
+                Log.e(TAG,"ACTION_AUDIO_BECOMING_NOISY-----------------------------------------------------")
+            }
+            AudioManager.ACTION_HEADSET_PLUG -> {
+                Log.e(TAG,"ACTION_HEADSET_PLUG -----------------------------------------------------")
+            }
+            AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED -> {
+                val state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, AudioManager.SCO_AUDIO_STATE_ERROR)
+                val stateOld = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_PREVIOUS_STATE, AudioManager.SCO_AUDIO_STATE_ERROR)
+                Log.e(TAG,"ACTION_SCO_AUDIO_STATE_UPDATED-----------------------------------------------------STATE: ${Audio.stateToString(stateOld)} --> ${Audio.stateToString(state)}")
+                if(state == AudioManager.SCO_AUDIO_STATE_CONNECTED)
+                    audio.setBluetoothScoOn()
+            }
+
+            /// BluetoothAdapter ///
             BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED -> {
                 val state = intent.getIntExtra(BluetoothAdapter.EXTRA_CONNECTION_STATE, BluetoothAdapter.ERROR)
-                Log.e(TAG,"ACTION_CONNECTION_STATE_CHANGED-----------------------------------------------------$state")
                 when(state) {
                     BluetoothAdapter.STATE_CONNECTING -> view.txtStatus.text = textConnecting
                     BluetoothAdapter.STATE_DISCONNECTING -> view.txtStatus.text = textDisconnecting
                     BluetoothAdapter.STATE_CONNECTED -> view.txtStatus.text = textConnected
                     BluetoothAdapter.STATE_DISCONNECTED -> view.txtStatus.text = textDisconnected
                 }
+                Log.e(TAG,"ACTION_CONNECTION_STATE_CHANGED----------------------------------------------------- ${Bluetooth.stateToString(state)}")
             }
+
             BluetoothAdapter.ACTION_STATE_CHANGED -> {
                 val state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
-                Log.e(TAG,"ACTION_STATE_CHANGED-----------------------------------------------------$state")
                 when(state) {
                     BluetoothAdapter.STATE_ON -> {
                         enableAllUI()
@@ -278,24 +332,21 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
                     BluetoothAdapter.STATE_TURNING_OFF -> view.txtStatus.text = textTurningOff
                     BluetoothAdapter.STATE_TURNING_ON -> view.txtStatus.text = textTurningOn
                 }
-
+                Log.e(TAG,"ACTION_STATE_CHANGED----------------------------------------------------- ${Bluetooth.stateToString(state)}")
             }
             BluetoothDevice.ACTION_BOND_STATE_CHANGED -> {
-                val state =
-                    intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR)
-                val prevState = intent.getIntExtra(
-                    BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE,
-                    BluetoothDevice.ERROR
-                )
-                Log.e(TAG,"broadcastReceiver:onReceive-----------------------------------------------------state=$state prevState=$prevState")
+                val state = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR)
+                val prevState = intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, BluetoothDevice.ERROR)
+                Log.e(TAG,"ACTION_BOND_STATE_CHANGED--------------------------------------------------state=$state prevState=$prevState")
                 //BOND_BONDED = 12;BOND_BONDING = 11;NONE=10
-
                 if (state == BluetoothDevice.BOND_BONDED && prevState == BluetoothDevice.BOND_BONDING) {
                     Log.e(TAG,"broadcastReceiver:onReceive-----------------------------------------------------Paired")
                 } else if (state == BluetoothDevice.BOND_NONE && prevState == BluetoothDevice.BOND_BONDED) {
                     Log.e(TAG,"broadcastReceiver:onReceive-----------------------------------------------------Unpaired")
                 }
             }
+            else ->
+                Log.e(TAG,"onBroadcastReceiver : action=$action")
         }
 
     }
@@ -394,8 +445,6 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
         startScanLEUI()
         isScanning = true
     }
-
-    // Callback
     private val callback = object : BluetoothLE.Callback {
         override fun onBatchScanResults(results: List<ScanResult>) {
             viewAdapter = BTLEDeviceAdapter(results, lowEnergyClickListener, leContextMenuListener)
@@ -421,9 +470,7 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
             view.listDevices.adapter = viewAdapter
         }
     }
-
     private fun askToPair(device: BluetoothDevice) {
-        //TODO: ask user if wants to pair the device first?
         Log.e(TAG, "askToPair------------------------------------------------$device")
         view.alertDialog(
             R.string.bluetooth_pairing_tle,
@@ -445,9 +492,8 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
     //----------------------------------------------------------------------------------------------
     // PERMISSIONS : BT Low Energy needs location access permission to scan for LE devices
     //----------------------------------------------------------------------------------------------
-    private fun checkPermissionsForBluetoothLowEnergy() {
-        Log.e("Main", "checkPermissionsForBLE---------------------------------------------------")
-        if (app.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+    private fun checkPermissionsForBluetoothLowEnergy() : Boolean {
+        if(app.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             view.alertDialog(
                 R.string.location_permission_tle,
                 R.string.location_permission_msg,
@@ -455,7 +501,6 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
                     override fun onNo() {
                         view.alert(R.string.location_permission_err)
                     }
-
                     override fun onYes() {
                         view.requestPermissions2(
                             arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
@@ -464,26 +509,51 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
                     }
 
                 })
-        } else
-            turnOnBluetooth()
+            return false
+        }
+        else
+            return true
     }
+    private fun checkPermissionsForAudioRecording() : Boolean {
+        val permission1 = Manifest.permission.RECORD_AUDIO
+//        val permission2 = Manifest.permission.WRITE_EXTERNAL_STORAGE
+        if(app.checkSelfPermission(permission1) != PackageManager.PERMISSION_GRANTED) {
+//            || app.checkSelfPermission(permission2) != PackageManager.PERMISSION_GRANTED) {
+            view.alertDialog(
+                R.string.audiorecord_permission_tle,
+                R.string.audiorecord_permission_msg,
+                object : YesNoListener {
+                    override fun onNo() {
+                        view.alert(R.string.audiorecord_permission_err)
+                    }
+                    override fun onYes() {
+                        view.requestPermissions2(
+                            arrayOf(permission1),//, permission2
+                            PERMISSION_REQUEST_AUDIO_RECORD
+                        )
+                    }
 
-    fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
+                })
+            return false
+        }
+        else
+            return true
+    }
+    fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         when (requestCode) {
             PERMISSION_REQUEST_LOCATION -> {
                 if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                     view.alert(R.string.location_permission_err)
-//                    view.alertDialog("Functionality limited","Since location access has not been granted, this app will not be able to discover beacons when in the background.",DialogInterface.OnDismissListener { })
+                }
+                return
+            }
+            PERMISSION_REQUEST_AUDIO_RECORD -> {
+                if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                    view.alert(R.string.audiorecord_permission_err)
                 }
                 return
             }
         }
     }
 
-
 }
-

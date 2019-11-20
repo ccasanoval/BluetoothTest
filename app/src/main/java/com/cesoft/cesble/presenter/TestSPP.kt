@@ -11,7 +11,7 @@ class TestSPP(context: Context) {
         private val TAG = TestSPP::class.java.simpleName
     }
 
-    private var bluetoothSPP: SPPBluetooth = SPPBluetooth(context)
+    private var bluetoothSPP = SPPBluetooth(context)
 
     fun stop() {
         bluetoothSPP.stopService()

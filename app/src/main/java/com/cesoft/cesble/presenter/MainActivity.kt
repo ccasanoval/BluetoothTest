@@ -1,29 +1,26 @@
 package com.cesoft.cesble.presenter
 
-import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
-
 import android.view.Menu
 import android.view.MenuItem
-import android.content.Intent
-import android.widget.Toast
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-
+import com.cesoft.cesble.R
+import com.cesoft.cesble.device.DiskEvent
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
-
-import com.cesoft.cesble.R
-
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 
 
 class MainActivity : AppCompatActivity(), MainPresenter.View {
@@ -47,6 +44,12 @@ class MainActivity : AppCompatActivity(), MainPresenter.View {
     override fun alert(id: Int) {
         Toast.makeText(this, getString(id), Toast.LENGTH_LONG).show()
     }
+    private fun alert(msg: String, vararg params: Any) {
+        if(params.isNotEmpty())
+            Toast.makeText(this, msg.format(params), Toast.LENGTH_LONG).show()
+        else
+            Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+    }
     override fun alertDialog(title: Int, message: Int, listener: MainPresenter.YesNoListener?) {
         val builder = AlertDialog.Builder(this)
         builder.setTitle(title)
@@ -61,11 +64,11 @@ class MainActivity : AppCompatActivity(), MainPresenter.View {
     override fun requestPermissions2(permissions: Array<String>, requestCode: Int) {
         super.requestPermissions(permissions, requestCode)
     }
-    override val broadcastReceiver = object : BroadcastReceiver() {
+    /*override val broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             presenter.onBroadcastReceiver(context, intent)
         }
-    }
+    }*/
 
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -86,13 +89,29 @@ class MainActivity : AppCompatActivity(), MainPresenter.View {
         listDevices = list_devices
         presenter = MainPresenter(this)
     }
+    override fun onDestroy() {
+        super.onDestroy()
+        presenter.onDestroy()
+    }
+
+    public override fun onStart() {
+        super.onStart()
+        EventBus.getDefault().register(this)
+    }
+
+    public override fun onStop() {
+        super.onStop()
+        EventBus.getDefault().unregister(this)
+    }
 
     override fun onResume() {
         super.onResume()
         presenter.onResume()
     }
 
+    private var menu: Menu? = null//TODO:change by Stop ...
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        this.menu = menu
         menuInflater.inflate(R.menu.menu_main, menu)
         return true
     }
@@ -101,7 +120,14 @@ class MainActivity : AppCompatActivity(), MainPresenter.View {
         when (item.itemId) {
             R.id.action_bt_onoff -> presenter.switchBT()
             R.id.action_bt_reset -> presenter.resetBT()
-            R.id.action_sound -> presenter.playSound()
+            R.id.action_play_music -> presenter.playMusic()
+            R.id.action_audio_record -> {
+                presenter.startRecordingAudio()
+            }
+            R.id.action_audio_record_stop -> {
+                presenter.stopRecordingAudio()
+            }
+            R.id.action_audio_play -> presenter.playAudio()
             R.id.action_sound_stop -> presenter.stopSound()
             else -> return super.onOptionsItemSelected(item)
         }
@@ -110,5 +136,14 @@ class MainActivity : AppCompatActivity(), MainPresenter.View {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         presenter.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onDiskEvent(event: DiskEvent) {
+        when(event.type) {
+            DiskEvent.Type.DISK_AT_90 ->
+                alert("Disk space is decreasing and scarce now! Free space: ${event.freeSpace}%")
+        }
     }
 }

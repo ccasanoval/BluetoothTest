@@ -12,36 +12,31 @@
         android:id="@+id/action_bt_onoff"
         android:orderInCategory="101"
         android:title="@string/action_bt_onoff"
-        android:icon="@android:drawable/stat_sys_data_bluetooth"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_audio_record"
+        android:orderInCategory="101"
+        android:title="@string/action_audio_record"
         app:showAsAction="never" />
     <item
-        android:id="@+id/action_sound"
+        android:id="@+id/action_audio_record_stop"
         android:orderInCategory="101"
-        android:title="@string/action_sound"
-        android:icon="@android:drawable/stat_sys_data_bluetooth"
+        android:title="@string/action_audio_record_stop"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_audio_play"
+        android:orderInCategory="101"
+        android:title="@string/action_audio_play"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_play_music"
+        android:orderInCategory="101"
+        android:title="@string/action_play_music"
         app:showAsAction="never" />
     <item
         android:id="@+id/action_sound_stop"
         android:orderInCategory="101"
         android:title="@string/action_sound_stop"
-        android:icon="@android:drawable/stat_sys_data_bluetooth"
         app:showAsAction="never" />
-
-
-    <!-- item
-        android:id="@+id/action_settings"
-        android:orderInCategory="100"
-        android:title="@string/action_settings"
-        app:showAsAction="never" / -->
-
-    <!-- item
-        android:id="@+id/action_aina_spp"
-        android:orderInCategory="101"
-        android:title="@string/action_aina_spp"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/action_aina_ble"
-        android:orderInCategory="102"
-        android:title="@string/action_aina_ble"
-        app:showAsAction="never" /-->
 </menu>

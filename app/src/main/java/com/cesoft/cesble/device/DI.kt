@@ -6,4 +6,5 @@ val bluetoothDIModule = module {
     single { Bluetooth() }
     single { BluetoothClassic() }
     single { BluetoothLE() }
+    single { Audio() }
 }
