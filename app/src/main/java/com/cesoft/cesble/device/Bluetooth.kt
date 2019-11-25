@@ -124,7 +124,7 @@ class Bluetooth : KoinComponent {
         if(isConnected()) return
         GlobalScope.launch(IO) {
             //device.fetchUuidsWithSdp()
-            Log.e(TAG, "connect-------------------------------------device=$device / uuids=${device.uuids != null}")
+            Log.e(TAG, "connect-------------------------------------device=$device / uuids=${device.uuids != null} / ${device.type}")
             if(device.uuids == null) {
                 device.fetchUuidsWithSdp()
             }

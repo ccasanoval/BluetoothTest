@@ -470,7 +470,7 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
             viewAdapter = BTDeviceAdapter(dataSet, pairedClickListener, pairedContextMenuListener)
             view.listDevices.adapter = viewAdapter
             for(device in dataSet) {
-                Log.e(TAG, "showPairedDevices------------------------------------------------${device.name} - ${device.address}")
+                Log.e(TAG, "showPairedDevices------------------------------------------------${device.name} - ${device.address} - ${device.name}")
             }
         }
     }
