@@ -24,8 +24,9 @@ class BTLEDeviceAdapter(private val dataSet: List<ScanResult>,
     override fun onBindViewHolder(holder: BTViewHolder, position: Int) {
         val headSet = if(dataSet[position].device.bluetoothClass.deviceClass.toString() == "240404") "*" else " "
         val btType = "LE > "
-        holder.textView.text = headSet + btType + dataSet[position].scanRecord?.deviceName
-android.util.Log.e("BTLEDeviceAdapter", "onBindViewHolder------------------------------------------------------"+dataSet[position].scanRecord?.deviceName+", "+dataSet[position].device.name)
+        val name = dataSet[position].scanRecord?.deviceName?.let {it} ?: dataSet[position].device.address
+        holder.textView.text = headSet + btType + name
+//android.util.Log.e("BTLEDeviceAdapter", "onBindViewHolder------------------------------------------------------"+dataSet[position].scanRecord?.deviceName+", "+dataSet[position].device.name)
         holder.textView.tag = position
         holder.textView.setOnClickListener(onClickListener)
         holder.textView.setOnCreateContextMenuListener(onCreateContextMenuListener)

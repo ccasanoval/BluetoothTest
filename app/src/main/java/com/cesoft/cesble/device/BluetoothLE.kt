@@ -66,18 +66,17 @@ class BluetoothLE : KoinComponent {
         }
         override fun onBatchScanResults(results: List<ScanResult>) {
 
-            val filteredResults = results
-                .filter { it.scanRecord?.deviceName != null }
-                //.map { it.device }
+for(item in results)android.util.Log.e(TAG, "onBatchScanResults-- Z:"+item.scanRecord?.deviceName+", "+item.device.name+", "+item.device.address+", "+item.device.type+", "+item.device.bluetoothClass)
 
-            val sortedResults = filteredResults.toSortedSet(Comparator { scanResult1: ScanResult, scanResult2: ScanResult ->
-                scanResult1.scanRecord!!.deviceName!!.compareTo(scanResult2.scanRecord!!.deviceName!!)
-            })
+//            val filteredResults = results.filter { it.scanRecord?.deviceName != null }
+//for(item in filteredResults)android.util.Log.e(TAG, "onBatchScanResults-- C:"+item.scanRecord?.deviceName+", "+item.device.name+", "+item.device.address+", "+item.device.type+", "+item.device.bluetoothClass)
 
-            callback?.onBatchScanResults(sortedResults.toList())
+//            val sortedResults = filteredResults.toSortedSet(Comparator { scanResult1: ScanResult, scanResult2: ScanResult ->
+//                scanResult1.scanRecord!!.deviceName!!.compareTo(scanResult2.scanRecord!!.deviceName!!)
+//            })
+//            callback?.onBatchScanResults(sortedResults.toList())
 
-for(item in results)        android.util.Log.e(TAG, "onBatchScanResults-- Z:"+item.scanRecord?.deviceName+", "+item.device.name+", "+item.device.address+", "+item.device.type+", "+item.device.bluetoothClass)
-for(item in filteredResults)android.util.Log.e(TAG, "onBatchScanResults-- C:"+item.scanRecord?.deviceName+", "+item.device.name+", "+item.device.address+", "+item.device.type+", "+item.device.bluetoothClass)
+            callback?.onBatchScanResults(results)
         }
         override fun onScanFailed(errorCode: Int) {
             android.util.Log.e(TAG, "onScanFailed---------errorCode=$errorCode  SCAN_FAILED_ALREADY_STARTED=$SCAN_FAILED_ALREADY_STARTED")

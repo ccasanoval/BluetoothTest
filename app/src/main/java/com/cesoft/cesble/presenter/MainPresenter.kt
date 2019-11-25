@@ -55,7 +55,7 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
         fun startActivityForResult(intent: Intent, requestCode: Int)
         fun requestPermissions2(permissions: Array<String>, requestCode: Int)
         fun alert(id: Int)
-        fun alertDialog(title: Int, message: Int, listener: YesNoListener?)
+        fun alertDialog(title: Any, message: Any, listener: YesNoListener?)
     }
 
     interface YesNoListener {
@@ -191,19 +191,20 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
             val device = adapter.getItemAt(view.tag as Int)
             Log.e(TAG,"pairedContextMenuListener----tag=${view.tag}-----------------------device=$device")
             contextMenu.setHeaderTitle("Test on Paired Devices")
-            contextMenu.add(0, view.id, 0, "SPP").setOnMenuItemClickListener {
+            //              groupId,   itemId,   order,       title
+            contextMenu.add(0, view.id, 0, "SPP Test").setOnMenuItemClickListener {
                 TestSPP(view.context).start(device)
                 true
-            }//groupId, itemId, order, title
-            contextMenu.add(0, view.id, 0, "LE").setOnMenuItemClickListener {
+            }
+            contextMenu.add(0, view.id, 0, "Connect Classic").setOnMenuItemClickListener {
+                bluetooth.connectClassic(device)
+                true
+            }
+            contextMenu.add(0, view.id, 0, "LE Test").setOnMenuItemClickListener {
                 TestLE.start(device)
                 true
             }
-            contextMenu.add(0, view.id, 0, "Connect").setOnMenuItemClickListener {
-                bluetooth.connect(device)
-                true
-            }
-            contextMenu.add(0, view.id, 0, "ConnectGatt").setOnMenuItemClickListener {
+            contextMenu.add(0, view.id, 0, "Connect Gatt").setOnMenuItemClickListener {
                 bluetooth.connectGatt(device)
                 true
             }
@@ -311,7 +312,7 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
                     BluetoothAdapter.STATE_CONNECTED -> view.txtStatus.text = textConnected
                     BluetoothAdapter.STATE_DISCONNECTED -> view.txtStatus.text = textDisconnected
                 }
-                Log.e(TAG,"ACTION_CONNECTION_STATE_CHANGED----------------------------------------------------- ${Bluetooth.stateToString(state)}")
+                Log.e(TAG,"ACTION_CONNECTION_STATE_CHANGED----------------------------------------------------- ${Bluetooth.stateAdapterToString(state)}")
             }
 
             BluetoothAdapter.ACTION_STATE_CHANGED -> {
@@ -332,7 +333,7 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
                     BluetoothAdapter.STATE_TURNING_OFF -> view.txtStatus.text = textTurningOff
                     BluetoothAdapter.STATE_TURNING_ON -> view.txtStatus.text = textTurningOn
                 }
-                Log.e(TAG,"ACTION_STATE_CHANGED----------------------------------------------------- ${Bluetooth.stateToString(state)}")
+                Log.e(TAG,"ACTION_STATE_CHANGED----------------------------------------------------- ${Bluetooth.stateAdapterToString(state)}")
             }
             BluetoothDevice.ACTION_BOND_STATE_CHANGED -> {
                 val state = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR)
@@ -468,13 +469,16 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
             val dataSet = ArrayList<BluetoothDevice>(it)//TODO: simplify
             viewAdapter = BTDeviceAdapter(dataSet, pairedClickListener, pairedContextMenuListener)
             view.listDevices.adapter = viewAdapter
+            for(device in dataSet) {
+                Log.e(TAG, "showPairedDevices------------------------------------------------${device.name} - ${device.address}")
+            }
         }
     }
     private fun askToPair(device: BluetoothDevice) {
-        Log.e(TAG, "askToPair------------------------------------------------$device")
-        view.alertDialog(
-            R.string.bluetooth_pairing_tle,
-            R.string.bluetooth_pairing_msg,
+        Log.e(TAG, "askToPair------------------------------------------------${device.name} / ${device.address}")
+        val tle = app.resources.getString(R.string.bluetooth_pairing_tle)
+        val msg = String.format(app.resources.getString(R.string.bluetooth_pairing_msg), device.name)
+        view.alertDialog(tle, msg,
             object : YesNoListener {
                 override fun onNo() {
                     view.txtStatus.text = ""

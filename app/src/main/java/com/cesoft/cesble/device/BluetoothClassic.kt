@@ -39,7 +39,7 @@ class BluetoothClassic : KoinComponent {
 
                     val type = when(device.type) {
                         BluetoothDevice.DEVICE_TYPE_CLASSIC -> "Classic"
-                        BluetoothDevice.DEVICE_TYPE_LE -> "LowEnrgy"
+                        BluetoothDevice.DEVICE_TYPE_LE -> "LE"
                         BluetoothDevice.DEVICE_TYPE_DUAL -> "Dual"
                         else -> " ? "
                     }
@@ -53,16 +53,19 @@ class BluetoothClassic : KoinComponent {
                                 +" : "+device.bluetoothClass.majorDeviceClass  //1024 = 0x400
                                 )
 
-                    if(device.name == null || device.name.isEmpty())return
-                    if(dataSet.contains(device))return
-
-                    if(currentScanned == 0) {
+                    if(currentScanned == 0)
                         dataSet.clear()
-                        dataSet.add(device)
+
+                    /*if(device.name == null || device.name.isEmpty()) {
+                        android.util.Log.e(TAG, "onDeviceFound---------------------------------------------------$device has no name. EXIT")
+                        //return
                     }
-                    else {
-                        dataSet.add(device)
-                    }
+                    if(dataSet.contains(device)) {
+                        android.util.Log.e(TAG, "onDeviceFound---------------------------------------------------$device already listed. EXIT")
+                        //return
+                    }*/
+
+                    dataSet.add(device)
                     currentScanned++
 
                     //TODO: return one by one or all together

@@ -19,7 +19,7 @@ import android.util.Log;
 
 
 @SuppressLint("NewApi")
-public class SPPBluetoothService extends SPPBluetoothState {
+public class SPPBluetoothService {
     // Debugging
     private static final String TAG = "Bluetooth Service";
 
@@ -62,13 +62,13 @@ public class SPPBluetoothService extends SPPBluetoothState {
     }
 
     // Return the current connection state.
-    public synchronized int getState() {
+    synchronized int getState() {
         return mState;
     }
 
     // Start the chat service. Specifically start AcceptThread to begin a
     // session in listening (server) mode. Called by the Activity onResume()
-    public synchronized void start(/*boolean isAndroid*/) {
+    synchronized void start(/*boolean isAndroid*/) {
         // Cancel any thread attempting to make a connection
         if (mConnectThread != null) {mConnectThread.cancel(); mConnectThread = null;}
         // Cancel any thread currently running a connection
@@ -80,21 +80,24 @@ public class SPPBluetoothService extends SPPBluetoothState {
         if (mSecureAcceptThread == null) {
             mSecureAcceptThread = new AcceptThread(/*isAndroid*/);
             mSecureAcceptThread.start();
-//            this.isAndroid = isAndroid;
         }
     }
 
     // Start the ConnectThread to initiate a connection to a remote device
     // device : The BluetoothDevice to connect
     // secure : Socket Security type - Secure (true) , Insecure (false)
-    public synchronized void connect(BluetoothDevice device) {
+    synchronized void connect(BluetoothDevice device) {
         // Cancel any thread attempting to make a connection
-        if (mState == SPPBluetoothState.STATE_CONNECTING) {
-            if (mConnectThread != null) {mConnectThread.cancel(); mConnectThread = null;}
+        if (mState == SPPBluetoothState.STATE_CONNECTING && mConnectThread != null) {
+            mConnectThread.cancel();
+            mConnectThread = null;
         }
 
         // Cancel any thread currently running a connection
-        if (mConnectedThread != null) {mConnectedThread.cancel(); mConnectedThread = null;}
+        if (mConnectedThread != null) {
+            mConnectedThread.cancel();
+            mConnectedThread = null;
+        }
 
         // Start the thread to connect with the given device
         mConnectThread = new ConnectThread(device);
@@ -107,7 +110,7 @@ public class SPPBluetoothService extends SPPBluetoothState {
      * @param socket  The BluetoothSocket on which the connection was made
      * @param device  The BluetoothDevice that has been connected
      */
-    public synchronized void connected(BluetoothSocket socket, BluetoothDevice
+    synchronized void connected(BluetoothSocket socket, BluetoothDevice
             device, final String socketType) {
         // Cancel the thread that completed the connection
         if (mConnectThread != null) {mConnectThread.cancel(); mConnectThread = null;}
@@ -137,7 +140,7 @@ public class SPPBluetoothService extends SPPBluetoothState {
     }
 
     // Stop all threads
-    public synchronized void stop() {
+    synchronized void stop() {
         if (mConnectThread != null) {
             mConnectThread.cancel();
             mConnectThread = null;
@@ -158,7 +161,7 @@ public class SPPBluetoothService extends SPPBluetoothState {
 
     // Write to the ConnectedThread in an unsynchronized manner
     // out : The bytes to write
-    public void write(byte[] out) {
+    void write(byte[] out) {
         // Create temporary object
         ConnectedThread r;
         // Synchronize a copy of the ConnectedThread
@@ -173,13 +176,13 @@ public class SPPBluetoothService extends SPPBluetoothState {
     // Indicate that the connection attempt failed and notify the UI Activity
     private void connectionFailed() {
         // Start the service over to restart listening mode
-        this.start(/*this.isAndroid*/);
+        this.start();
     }
 
     // Indicate that the connection was lost and notify the UI Activity
     private void connectionLost() {
         // Start the service over to restart listening mode
-        this.start(/*this.isAndroid*/);
+        this.start();
     }
 
     // This thread runs while listening for incoming connections. It behaves
@@ -206,7 +209,7 @@ public class SPPBluetoothService extends SPPBluetoothState {
 
         public void run() {
             setName("AcceptThread" + mSocketType);
-            BluetoothSocket socket = null;
+            BluetoothSocket socket;
 
             // Listen to the server socket if we're not connected
             while (mState != SPPBluetoothState.STATE_CONNECTED && isRunning) {
@@ -231,9 +234,9 @@ public class SPPBluetoothService extends SPPBluetoothState {
                             case SPPBluetoothState.STATE_NONE:
                             case SPPBluetoothState.STATE_CONNECTED:
                                 // Either not ready or already connected. Terminate new socket.
-                                try {
-                                    socket.close();
-                                } catch (IOException e) { }
+                                try { socket.close(); } catch (IOException ignore) { }
+                                break;
+                            default:
                                 break;
                         }
                     }
@@ -241,14 +244,14 @@ public class SPPBluetoothService extends SPPBluetoothState {
             }
         }
 
-        public void cancel() {
+        void cancel() {
             try {
                 mmServerSocket.close();
                 mmServerSocket = null;
-            } catch (IOException e) { }
+            } catch (IOException ignore) { }
         }
 
-        public void kill() {
+        void kill() {
             isRunning = false;
         }
     }

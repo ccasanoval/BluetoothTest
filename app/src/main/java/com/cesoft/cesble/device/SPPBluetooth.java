@@ -25,7 +25,7 @@ public class SPPBluetooth {
     private Context mContext;
 
     // Local Bluetooth adapter
-    private BluetoothAdapter mBluetoothAdapter = null;
+    private BluetoothAdapter mBluetoothAdapter;
 
     // Member object for the chat services
     private SPPBluetoothService mChatService = null;
@@ -41,7 +41,6 @@ public class SPPBluetooth {
     private boolean isServiceRunning = false;
 
     private String keyword = "";
-//    private boolean isAndroid = SPPBluetoothState.DEVICE_ANDROID;
 
     private BluetoothConnectionListener bcl;
     private int c = 0;
@@ -119,13 +118,10 @@ public class SPPBluetooth {
             return -1;
     }
 
-    public void startService(/*boolean isAndroid*/) {
-        if (mChatService != null) {
-            if (mChatService.getState() == SPPBluetoothState.STATE_NONE) {
-                isServiceRunning = true;
-                mChatService.start(/*isAndroid*/);
-//                SPPBluetooth.this.isAndroid = isAndroid;
-            }
+    public void startService() {
+        if (mChatService != null && mChatService.getState() == SPPBluetoothState.STATE_NONE) {
+            isServiceRunning = true;
+            mChatService.start();
         }
     }
 
@@ -134,12 +130,10 @@ public class SPPBluetooth {
             isServiceRunning = false;
             mChatService.stop();
         }
-        new Handler().postDelayed(new Runnable() {
-            public void run() {
-                if (mChatService != null) {
-                    isServiceRunning = false;
-                    mChatService.stop();
-                }
+        new Handler().postDelayed(() -> {
+            if (mChatService != null) {
+                isServiceRunning = false;
+                mChatService.stop();
             }
         }, 500);
     }

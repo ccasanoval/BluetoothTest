@@ -4,9 +4,6 @@ import android.content.Context
 import android.content.res.AssetFileDescriptor
 import android.media.*
 import android.util.Log
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.greenrobot.eventbus.EventBus
 import org.koin.core.inject
 import org.koin.core.KoinComponent
@@ -34,9 +31,7 @@ class Audio : KoinComponent {
 
     private var fileName: String
 
-    //private var isPlaying = false
     private var isInitListeners = false
-    //private var isPrepared = false
     private var isRecording = false
     private var isScheduledToPlay = false
 
@@ -81,25 +76,6 @@ class Audio : KoinComponent {
         }
 
         Log.e(TAG, "startPlaying-------------------------------------------------------SCO=" + audioManager.isBluetoothScoAvailableOffCall)
-//        audioManager.mode = AudioManager.MODE_IN_CALL
-//        audioManager.isBluetoothScoOn = true
-//        audioManager.startBluetoothSco()
-
-        /*if(Build.VERSION.SDK_INT >= 26) {
-            mAudioManager.registerAudioPlaybackCallback(new AudioManager.AudioPlaybackCallback() {
-                @Override
-                public void onPlaybackConfigChanged(List<AudioPlaybackConfiguration> configs) {
-                    super.onPlaybackConfigChanged(configs);
-                    Log.e(TAG, "startPlaying:onPlaybackConfigChanged-------------------------------------------------------"+configs.size());
-                    for(int i=0; i < configs.size(); i++) {
-                        Log.e(TAG, "-------------------------------------------------------"+configs.get(i).getAudioAttributes().toString());
-                    }
-                    if(configs.isEmpty()) {
-                        stopPlaying();
-                    }
-                }
-            }, new Handler());
-        }*/
 
         try {
             player.setDataSource(fileName)
@@ -117,33 +93,13 @@ class Audio : KoinComponent {
         }
     }
 
-    /*fun stopPlaying() {
-        if(!isPlaying) return
-
-        Log.e(TAG, "stopPlaying-------------------------------------------------------000")
-        val mp = MediaPlayer()
-        mp.stop()
-        // Stop audio I/O operation
-        audioManager.mode = AudioManager.MODE_NORMAL
-        audioManager.isBluetoothScoOn = false
-        audioManager.stopBluetoothSco()
-
-        isRecording = false
-        isPlaying = false
-    }*/
-
     fun startRecording() {
         try {
-//            audioManager.mode = AudioManager.MODE_IN_CALL
-//            audioManager.isBluetoothScoOn = true
-//            audioManager.startBluetoothSco()
-
             mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC)
             mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS)
             mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
             //mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.VORBIS);
             mediaRecorder.setOutputFile(fileName)
-
             mediaRecorder.prepare()
             mediaRecorder.start()
             isRecording = true
@@ -156,11 +112,6 @@ class Audio : KoinComponent {
     fun stopRecording() {
         mediaRecorder.stop()
         mediaRecorder.release()
-        // Stop audio I/O operation
-//        audioManager.mode = AudioManager.MODE_NORMAL
-//        audioManager.isBluetoothScoOn = false
-//        audioManager.stopBluetoothSco()
-        //
         isRecording = false
     }
 

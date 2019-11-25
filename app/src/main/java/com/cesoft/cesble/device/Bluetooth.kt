@@ -1,18 +1,17 @@
 package com.cesoft.cesble.device
 
 import android.bluetooth.*
+import android.bluetooth.BluetoothProfile.ServiceListener
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.core.KoinComponent
 import org.koin.core.inject
-import android.bluetooth.BluetoothHeadset
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothProfile
-import android.bluetooth.BluetoothProfile.ServiceListener
+import java.util.*
 
 
 class Bluetooth : KoinComponent {
@@ -20,15 +19,43 @@ class Bluetooth : KoinComponent {
     companion object {
         private val TAG = Bluetooth::class.java.simpleName
 
-        fun stateToString(state: Int) = when(state) {
-            BluetoothAdapter.STATE_TURNING_OFF -> "TURNING_OFF"
-            BluetoothAdapter.STATE_OFF -> "STATE_OFF"
-            BluetoothAdapter.STATE_TURNING_ON -> "TURNING_ON"
-            BluetoothAdapter.STATE_ON -> "STATE_ON"
-            BluetoothAdapter.STATE_DISCONNECTING -> "DISCONNECTING"
+        fun stateAdapterToString(state: Int) = when(state) {
+            BluetoothAdapter.STATE_TURNING_OFF -> "TURNING OFF..."
+            BluetoothAdapter.STATE_OFF -> "STATE OFF"
+            BluetoothAdapter.STATE_TURNING_ON -> "TURNING ON..."
+            BluetoothAdapter.STATE_ON -> "STATE ON"
+            BluetoothAdapter.STATE_DISCONNECTING -> "DISCONNECTING..."
             BluetoothAdapter.STATE_DISCONNECTED -> "DISCONNECTED"
-            BluetoothAdapter.STATE_CONNECTING -> "CONNECTING"
+            BluetoothAdapter.STATE_CONNECTING -> "CONNECTING..."
             BluetoothAdapter.STATE_CONNECTED -> "CONNECTED"
+            else -> "?"
+        }
+
+        fun stateProfileToString(state: Int) = when(state) {
+            BluetoothProfile.STATE_DISCONNECTED -> "DISCONNECTED"
+            BluetoothProfile.STATE_CONNECTING -> "CONNECTING..."
+            BluetoothProfile.STATE_CONNECTED -> "CONNECTED"
+            BluetoothProfile.STATE_DISCONNECTING -> "DISCONNECTING..."
+            else -> "?"
+        }
+
+        fun typeToString(type: Int) = when(type) {
+            BluetoothDevice.DEVICE_TYPE_CLASSIC -> "CLASSIC"
+            BluetoothDevice.DEVICE_TYPE_LE -> "LE"
+            BluetoothDevice.DEVICE_TYPE_DUAL -> "DUAL"
+            else -> "?"
+        }
+
+        fun connectionTypeToString(type: Int) = when(type) {
+            BluetoothSocket.TYPE_RFCOMM -> "RFCOMM"
+            BluetoothSocket.TYPE_SCO -> "SCO"
+            BluetoothSocket.TYPE_L2CAP -> "L2CAP"
+            else -> "?"
+        }
+
+        fun profileToString(profile: Int) = when(profile) {
+            BluetoothProfile.A2DP -> "A2DP"
+            BluetoothProfile.HEADSET -> "HEADSET"
             else -> "?"
         }
     }
@@ -73,66 +100,114 @@ class Bluetooth : KoinComponent {
     // CONNECTION
     //----------------------------------------------------------------------------------------------
 
-    private var socket: BluetoothSocket? = null
-    fun connect(device: BluetoothDevice) {
-        socket?.let {
-            if(it.isConnected) {
-                Log.e(TAG, "connect-----------------------1--------------Already connected!")
-                return
-            }
-        }
-        adapter?.let {
-            //if(it.isEnabled) {
-            val profiles = intArrayOf(BluetoothProfile.A2DP, BluetoothProfile.HEADSET)
-            for(profileId in profiles) {
-                if(it.getProfileConnectionState(profileId) == BluetoothProfile.STATE_CONNECTED) {
-                    Log.e(TAG, "connect----------------2---------------------Already connected!  profileId=$profileId")//HEADSET = 1, A2DP = 2
-                    return
+    private fun isConnected() : Boolean {
+        socket?.let { socket ->
+            if(socket.isConnected) {
+                Log.e(TAG, "connect-----------------------1--------------Already connected! ${connectionTypeToString(socket.connectionType)}")
+                adapter?.let { adapter ->
+                    //if(it.isEnabled) {
+                    val profiles = intArrayOf(BluetoothProfile.A2DP, BluetoothProfile.HEADSET)
+                    for(profileId in profiles) {
+                        if(adapter.getProfileConnectionState(profileId) == BluetoothProfile.STATE_CONNECTED) {
+                            Log.e(TAG, "connect----------------2---------------------Already connected!  profileId=${profileToString(profileId)}")
+                            return true
+                        }
+                    }
                 }
             }
         }
+        return false
+    }
 
-        GlobalScope.launch {
+    private var socket: BluetoothSocket? = null
+    fun connectClassic(device: BluetoothDevice) {
+        if(isConnected()) return
+        GlobalScope.launch(IO) {
             //device.fetchUuidsWithSdp()
+            Log.e(TAG, "connect-------------------------------------device=$device / uuids=${device.uuids != null}")
+            if(device.uuids == null) {
+                device.fetchUuidsWithSdp()
+            }
+            else
             for(uuid in device.uuids) {
+                val uuid0 = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb")//AINA PTT Voice Responder Classic
+                val uuid1 = UUID.fromString("00001108-0000-1000-8000-00805f9b34fb")
+                val uuid2 = UUID.fromString("0000111e-0000-1000-8000-00805f9b34fb")
+                val uuid3 = UUID.fromString("0000110b-0000-1000-8000-00805f9b34fb")
+                val uuid4 = UUID.fromString("0000110e-0000-1000-8000-00805f9b34fb")
+                val uuid5 = UUID.fromString("00000000-0000-1000-8000-00805f9b34fb")
+
+//                if(uuid.uuid != uuid0) {
+//                    Log.e(TAG, "connect-------------------------------------service not wanted: uuid=$uuid")
+//                    continue
+//                }
                 try {
-                    Log.e(TAG, "connect-------------------------------------connecting to uuid=$uuid")
-                    if(socket == null) {
-                        //socket = device.createRfcommSocketToServiceRecord(uuid.uuid)
-                        socket = device.createInsecureRfcommSocketToServiceRecord(uuid.uuid)
-                        delay(250)//!!!
+                    Log.e(TAG, "connect-------------------------------------connecting to uuid=${uuid.uuid}")
+                    //if(socket == null) {
+                        val socket = device.createRfcommSocketToServiceRecord(uuid.uuid)
+                        //socket = device.createInsecureRfcommSocketToServiceRecord(uuid.uuid)
+                        //socket = device.createL2capChannel(uuid.uuid)//Android Q
+                        //delay(250)//!!!
+                        //Thread.sleep(500)
+                        delay(500)//!!!
                         socket?.connect()
+                        delay(500)//!!!
+                        //socket?.outputStream?.write(0x0a)
+                        val available = socket?.inputStream?.available() ?: 0
+                    Log.e(TAG, "connect:------------------------------available=$available")
+                        if(available > 0) {
+                            val bytes = socket?.inputStream?.readBytes()
+                            Log.e(TAG, "connect:------------------------------available=$available / val="+bytes?.toString())
+                        }
+                        delay(500)//!!!
+                        Log.e(TAG, "connect:------------**************************------------------------socket=${socket.isConnected}")
+
+                    if(socket.isConnected) {
+                        val audioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+                        audioManager.startBluetoothSco()
+                        Log.e(TAG, "connect:------------------------------isBluetoothScoAvailableOffCall=${audioManager.isBluetoothScoAvailableOffCall}")
                     }
-                    break
+
+                    //}
                 } catch (e: Exception) {
                     socket = null
-                    Log.e(TAG, "connect:e:-------------------------------------$e")
+                    Log.e(TAG, "connect:e:-------------------------------------------------------------------$e")
                 }
-                Log.e(TAG, "connect:-------------------------------------NO LUCK")
+                //break
             }
             Log.e(TAG, "connect:-------------------------------------999")
         }
     }
 
     fun connectGatt(device: BluetoothDevice,
-                gattCallback: BluetoothGattCallback,
-                transport: Int=BluetoothDevice.TRANSPORT_LE): BluetoothGatt {
-
-Log.e(TAG, "connect-------------------------------------address=${device.address}, name=${device.name}, type=${device.type}")
-//DEVICE_TYPE_CLASSIC = 1       //DEVICE_TYPE_LE = 2        //DEVICE_TYPE_DUAL = 3
-
-            return device.connectGatt(appContext, false, gattCallback, transport)
+                    gattCallback: BluetoothGattCallback,
+                    transport: Int=BluetoothDevice.TRANSPORT_LE): BluetoothGatt {
+Log.e(TAG, "connectGatt-------------------------------------address=${device.address}, name=${device.name}, type=${typeToString(device.type)}")
+        return device.connectGatt(appContext, true, gattCallback, transport)
     }
+
     fun connectGatt(device: BluetoothDevice): BluetoothGatt  {
         return device.connectGatt(appContext, true,
             object : BluetoothGattCallback() {
                 override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
                     super.onConnectionStateChange(gatt, status, newState)
-                    Log.e(TAG, "connect:onConnectionStateChange-------------------------------------status=$status, newState=$newState")
-                    if(status == BluetoothProfile.STATE_CONNECTED)
-                        Log.e(TAG, "connect:onConnectionStateChange-------------------------------------STATE_CONNECTED")
+                    Log.e(TAG, "connect:onConnectionStateChange-------------------------------------status=${stateProfileToString(status)}, newState=${stateProfileToString(newState)}")
+                    if(newState == BluetoothProfile.STATE_CONNECTED) {
+                        Log.e(TAG, "connect:onConnectionStateChange-------------------------------------STATE_CONNECTED : "+gatt.device.name)
+
+                        val audioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+                        audioManager.startBluetoothSco()
+
+                        gatt.discoverServices()
+
+                        for(service in gatt.services) {
+                            Log.e(TAG, "connect:onConnectionStateChange-------------------------------------Service="+service.uuid+"  type="+service.type)
+                        }
+                        val service = gatt.getService(UUID.fromString("127FACE1-CB21-11E5-93D0-0002A5D5C51B"))
+                        Log.e(TAG, "connect:onConnectionStateChange----------------***---------------------Service=$service")
+                    }
                 }
-            })
+            }, BluetoothDevice.TRANSPORT_LE)
     }
 
     var headset: BluetoothHeadset? = null
@@ -170,74 +245,4 @@ Log.e(TAG, "connect-------------------------------------address=${device.address
         val b = adapter?.getProfileProxy(appContext, profileListener, BluetoothProfile.HEADSET)
         Log.e(TAG, "getProfileProxy-------------------------------------$b")
     }
-
-
-
-/*
-    private var audioManager: AudioManager? = null
-    private var player = MediaPlayer()
-    private var isSoundPlaying = false
-    private var isSoundPrepared = false
-
-    fun stopSound() {
-        player.stop()
-    }
-    fun playSound() {
-        ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100).startTone(ToneGenerator.TONE_PROP_BEEP)
-        Log.e(TAG, "playSound-------------------------------------------------------isSoundPrepared=$isSoundPrepared isSoundPlaying=$isSoundPlaying ")
-        if(isSoundPlaying) {
-            Log.e(TAG, "playSound-------------------------------------------------------STOP************")
-            player.stop()
-            playSound()
-        }
-        else if(isSoundPrepared) {
-            Log.e(TAG, "playSound-------------------------------------------------------PLAY************")
-            player.start()
-        }
-        else {
-            Log.e(TAG, "playSound-------------------------------------------------------PREPARE************")
-            isSoundPrepared = true
-            audioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            audioManager?.mode = AudioManager.MODE_NORMAL
-            audioManager?.isBluetoothScoOn = true
-            audioManager?.startBluetoothSco()
-
-
-            val assetManager = appContext.assets
-            val fd: AssetFileDescriptor
-            try {
-                player.setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                        .setLegacyStreamType(AudioManager.STREAM_MUSIC)
-                        .build()
-                )
-
-                player.setOnPreparedListener {
-                    Log.e(TAG, "player.setOnPreparedListener-----------------PREPARE--------------------------------------0")
-                    it.start()
-                    isSoundPlaying = true
-                }
-                player.setOnErrorListener { mp, what, extra ->
-                    Log.e(TAG, "player.setOnErrorListener---------------------ERROR--------------------------------- $what, $extra")
-                    isSoundPlaying = false
-                    false
-                }
-                player.setOnCompletionListener {
-                    Log.e(TAG,"player.setOnCompletionListener-----------------COMPLETED--------------------------------------9")
-                    isSoundPlaying = false
-                }
-
-                fd = assetManager.openFd("Cochise.mp3")
-                player.setDataSource(fd.fileDescriptor, fd.startOffset, fd.length)
-                //player.setDataSource(fd.fileDescriptor)
-                player.prepareAsync()
-            }
-            catch(e: Exception) {
-                Log.e(TAG, "playSound:e:-------------------------------------------------------", e)
-            }
-        }
-    }*/
-
 }

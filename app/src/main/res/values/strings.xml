@@ -31,7 +31,7 @@
     <string name="bluetooth_scan_stop">Stop Scanning</string>
 
     <string name="bluetooth_pairing_tle">Device pairing</string>
-    <string name="bluetooth_pairing_msg">Do you want to pair the device?</string>
+    <string name="bluetooth_pairing_msg">Do you want to pair the device %s?</string>
     <string name="bluetooth_paired_ok">Device paired</string>
     <string name="bluetooth_paired_error">Error pairing device</string>
 

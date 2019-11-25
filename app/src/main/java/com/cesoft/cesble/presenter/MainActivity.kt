@@ -50,10 +50,14 @@ class MainActivity : AppCompatActivity(), MainPresenter.View {
         else
             Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
     }
-    override fun alertDialog(title: Int, message: Int, listener: MainPresenter.YesNoListener?) {
+    override fun alertDialog(title: Any, message: Any, listener: MainPresenter.YesNoListener?) {
         val builder = AlertDialog.Builder(this)
-        builder.setTitle(title)
-        builder.setMessage(message)
+        if(title is Int)            builder.setTitle(title)
+        else if(title is String)    builder.setTitle(title)
+        if(message is Int)          builder.setMessage(message)
+        else if(message is String)  builder.setMessage(message)
+        //builder.setTitle(title)
+        //builder.setMessage(message)
         listener?.let {
             builder.setPositiveButton(android.R.string.yes) { _, _ -> listener.onYes() }
             builder.setNegativeButton(android.R.string.no) { _, _ -> listener.onNo() }
