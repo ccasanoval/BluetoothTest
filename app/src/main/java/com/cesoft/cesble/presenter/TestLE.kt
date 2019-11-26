@@ -3,6 +3,7 @@ package com.cesoft.cesble.presenter
 import android.bluetooth.*
 import android.util.Log
 import com.cesoft.cesble.device.Bluetooth
+import org.greenrobot.eventbus.EventBus
 import org.koin.core.KoinComponent
 import org.koin.core.inject
 import java.util.*
@@ -18,12 +19,24 @@ object TestLE : KoinComponent {
     private val UUID_LE_BUTTONS = UUID.fromString("127FBEEF-CB21-11E5-93D0-0002A5D5C51B")
     private val UUID_LE_CONFIG  = UUID.fromString("00002902-0000-1000-8000-00805F9B34FB")
 
+    class ButtonEvent(characteristic: BluetoothGattCharacteristic) {//val type: Type, val on: Boolean) {
+        enum class Type(val code: Byte) {
+            PTT(0x01),
+            PTTE(0x2),
+            PTTS(0x4),
+            PTTB1(0x8),
+            PTTB2(0x10),
+            MFB(0x20),
+        }
+        val type: Byte = characteristic.value[0]
+    }
+
     private val bluetooth : Bluetooth by inject()
     private var bluetoothGatt: BluetoothGatt? = null
 
-
     fun start(device: BluetoothDevice) {
 
+        //TODO: Check if bluetooth is connected...
         for(deviceClassic in bluetooth.pairedDevices!!) {
             if(deviceClassic.type == BluetoothDevice.DEVICE_TYPE_CLASSIC)
                 bluetooth.connectClassic(deviceClassic)
@@ -38,10 +51,22 @@ object TestLE : KoinComponent {
         Log.e(TAG, "start--------------------------------------#services="+bluetoothGatt?.services?.size)
     }
 
+    private fun sendButtonsStatus(characteristic: BluetoothGattCharacteristic) {
+        EventBus.getDefault().post(ButtonEvent(characteristic))
+        //val eb = EventBus.getDefault()
+        //eb.post(ButtonEvent(ButtonEvent.Type.PTT, (characteristic.value[0] and ButtonEvent.Type.PTT.code > 0)))
+        /*val PTTE = when(characteristic.value[0] and 0x02 > 0) { true -> " 1 "; else -> " 0 "}
+        val PTTS = when(characteristic.value[0] and 0x04 > 0) { true -> " 1 "; else -> " 0 "}
+        val PTTB1 = when(characteristic.value[0] and 0x08 > 0) { true -> " 1 "; else -> " 0 "}
+        val PTTB2 = when(characteristic.value[0] and 0x10 > 0) { true -> " 1 "; else -> " 0 "}
+        val MFB = when(characteristic.value[0] and 0x20 > 0) { true -> " 1 "; else -> " 0 "}*/
+    }
+
     private val gattCallback = object : BluetoothGattCallback() {
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
             if(characteristic.uuid.toString() == UUID_LE_BUTTONS.toString()) {
                 printButtonStatus(characteristic)
+                sendButtonsStatus(characteristic)
             }
             else
                 Log.e(TAG, "gattCallback:onCharacteristicChanged--------------------***********------------------${characteristic.uuid}")
@@ -52,11 +77,7 @@ object TestLE : KoinComponent {
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
                     Log.e(TAG, "gattCallback: Connected to GATT server.--------------------------------------STATE_CONNECTED")
-                    //Log.e(TAG, "gattCallback: Attempting to start service discovery: " + bluetoothGatt?.discoverServices())
-                    //bluetoothGatt?.discoverServices()
-                    //bluetoothGatt?.readCharacteristic(BluetoothGattCharacteristic(UUID.fromString("127BEEF1-CB21-11E5-93D0-0002A5D5C51B")))
                     bluetoothGatt?.discoverServices()
-                    //enableNotificationButtonsState()
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
                     Log.e(TAG, "Disconnected from GATT server.--------------------------------STATE_DISCONNECTED "+bluetoothGatt?.discoverServices())
@@ -76,14 +97,6 @@ object TestLE : KoinComponent {
                                 if(characteristic.uuid.toString() == UUID_LE_BUTTONS.toString()) {
                                     Log.e(TAG, "onServicesDiscovered----------2------------------------characteristic="+characteristic.uuid.toString())
                                     enableNotificationButtonsState()
-                                    /*
-                                    //bluetoothGatt?.readCharacteristic(characteristic)//-----> onCharacteristicRead()
-                                    GlobalScope.launch(IO) {
-                                        for(i in 0..10) {
-                                            bluetoothGatt?.readCharacteristic(characteristic)//-----> For some reason, the first time gets 137 error
-                                            delay(200)
-                                        }
-                                    }*/
                                 }
                             }
                         }
@@ -96,13 +109,13 @@ object TestLE : KoinComponent {
         }
 
         private fun printButtonStatus(characteristic: BluetoothGattCharacteristic) {
-            val PTT = when(characteristic.value[0] and 0x01 > 0) { true -> " 1 "; else -> " 0 "}
-            val PTTE = when(characteristic.value[0] and 0x02 > 0) { true -> " 1 "; else -> " 0 "}
-            val PTTS = when(characteristic.value[0] and 0x04 > 0) { true -> " 1 "; else -> " 0 "}
-            val PTTB1 = when(characteristic.value[0] and 0x08 > 0) { true -> " 1 "; else -> " 0 "}
-            val PTTB2 = when(characteristic.value[0] and 0x10 > 0) { true -> " 1 "; else -> " 0 "}
-            val MFB = when(characteristic.value[0] and 0x20 > 0) { true -> " 1 "; else -> " 0 "}
-            Log.e(TAG, "onCharacteristicRead----------------------------------DATA: PTT=$PTT, PTTE=$PTTE, PTTS=$PTTS, PTTB1=$PTTB1 PTTB2=$PTTB2 MFB=$MFB")
+            val ptt = when(characteristic.value[0] and 0x01 > 0) { true -> " 1 "; else -> " 0 "}
+            val ptte = when(characteristic.value[0] and 0x02 > 0) { true -> " 1 "; else -> " 0 "}
+            val ptts = when(characteristic.value[0] and 0x04 > 0) { true -> " 1 "; else -> " 0 "}
+            val pttb1 = when(characteristic.value[0] and 0x08 > 0) { true -> " 1 "; else -> " 0 "}
+            val pttb2 = when(characteristic.value[0] and 0x10 > 0) { true -> " 1 "; else -> " 0 "}
+            val mfb = when(characteristic.value[0] and 0x20 > 0) { true -> " 1 "; else -> " 0 "}
+            Log.e(TAG, "printButtonStatus----------------------------------DATA: PTT=$ptt, PTTE=$ptte, PTTS=$ptts, PTTB1=$pttb1 PTTB2=$pttb2 MFB=$mfb")
 
             when {
                 characteristic.value[0] and 0x01 > 0 -> setRedLed()
@@ -129,16 +142,14 @@ object TestLE : KoinComponent {
             when(status) {
                 BluetoothGatt.GATT_SUCCESS -> {
                     Log.e(TAG, "onCharacteristicRead----------------------------------GATT_SUCCESS ")
-
                     if(characteristic.uuid.toString() == UUID_LE_BUTTONS.toString()) {
-                        printButtonStatus(characteristic)
-
+//                        printButtonStatus(characteristic)
                         /// Enable notification for button characteristic change
                         //val buttonsChar = bluetoothGatt!!.getService(UUID_LE_SERVICE).getCharacteristic(UUID_LE_BUTTONS)
-                        bluetoothGatt!!.setCharacteristicNotification(characteristic, true)
-                        val descriptor: BluetoothGattDescriptor = characteristic.getDescriptor(UUID_LE_CONFIG)
-                        descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                        bluetoothGatt!!.writeDescriptor(descriptor)
+//                        bluetoothGatt!!.setCharacteristicNotification(characteristic, true)
+//                        val descriptor: BluetoothGattDescriptor = characteristic.getDescriptor(UUID_LE_CONFIG)
+//                        descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+//                        bluetoothGatt!!.writeDescriptor(descriptor)
                     }
                 }
             }
@@ -177,8 +188,7 @@ object TestLE : KoinComponent {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    private val LEDS = UUID.fromString("127FDEAD-CB21-11E5-93D0-0002A5D5C51B".toLowerCase(Locale.US))
-
+    private val LEDS = UUID.fromString("127FDEAD-CB21-11E5-93D0-0002A5D5C51B")
 
     private fun setRedLed() {
         bluetoothGatt!!.getService(UUID_LE_SERVICE).getCharacteristic(LEDS).value = ByteArray(1) {0x01}

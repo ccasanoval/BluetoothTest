@@ -130,17 +130,17 @@ class Bluetooth : KoinComponent {
             }
             else
             for(uuid in device.uuids) {
-                val uuid0 = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb")//AINA PTT Voice Responder Classic
+//                val uuid0 = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb")//AINA PTT Voice Responder Classic
                 val uuid1 = UUID.fromString("00001108-0000-1000-8000-00805f9b34fb")
-                val uuid2 = UUID.fromString("0000111e-0000-1000-8000-00805f9b34fb")
-                val uuid3 = UUID.fromString("0000110b-0000-1000-8000-00805f9b34fb")
-                val uuid4 = UUID.fromString("0000110e-0000-1000-8000-00805f9b34fb")
-                val uuid5 = UUID.fromString("00000000-0000-1000-8000-00805f9b34fb")
+//                val uuid2 = UUID.fromString("0000111e-0000-1000-8000-00805f9b34fb")
+//                val uuid3 = UUID.fromString("0000110b-0000-1000-8000-00805f9b34fb")
+//                val uuid4 = UUID.fromString("0000110e-0000-1000-8000-00805f9b34fb")
+//                val uuid5 = UUID.fromString("00000000-0000-1000-8000-00805f9b34fb")
 
-//                if(uuid.uuid != uuid0) {
-//                    Log.e(TAG, "connect-------------------------------------service not wanted: uuid=$uuid")
-//                    continue
-//                }
+                if(uuid.uuid != uuid1) {
+                    Log.e(TAG, "connect-------------------------------------service not wanted: uuid=$uuid")
+                    continue
+                }
                 try {
                     Log.e(TAG, "connect-------------------------------------connecting to uuid=${uuid.uuid}")
                     //if(socket == null) {
@@ -195,6 +195,8 @@ Log.e(TAG, "connectGatt-------------------------------------address=${device.add
                     if(newState == BluetoothProfile.STATE_CONNECTED) {
                         Log.e(TAG, "connect:onConnectionStateChange-------------------------------------STATE_CONNECTED : "+gatt.device.name)
 
+                        ConnectedDevice.device = gatt.device
+
                         val audioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
                         audioManager.startBluetoothSco()
 
@@ -208,41 +210,5 @@ Log.e(TAG, "connectGatt-------------------------------------address=${device.add
                     }
                 }
             }, BluetoothDevice.TRANSPORT_LE)
-    }
-
-    var headset: BluetoothHeadset? = null
-    var device: BluetoothDevice? = null
-    private val profileListener = object : ServiceListener {
-        override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
-            Log.e(TAG, "profileListener:onServiceConnected-------------------------------------$profile")
-            if(profile == BluetoothProfile.HEADSET) {
-                headset = proxy as BluetoothHeadset
-                device = getConnectedHeadset()
-                Log.e(TAG, "profileListener:onServiceConnected-------------------------------------HEADSET: $headset")
-                Log.e(TAG, "profileListener:onServiceConnected-------------------------------------HEADSET DEV: $device  audioOn="+headset?.isAudioConnected(device))
-
-                headset?.startVoiceRecognition(device)
-            }
-        }
-        override fun onServiceDisconnected(profile: Int) {
-            Log.e(TAG, "profileListener:onServiceDisconnected-------------------------------------$profile")
-            if (profile == BluetoothProfile.HEADSET) {
-                headset = null
-            }
-        }
-    }
-
-    private fun getConnectedHeadset(): BluetoothDevice? {
-        headset?.let {
-            val devices = it.connectedDevices
-            return if(devices.isNotEmpty())
-                devices[0]
-            else null
-        } ?: run { return null }
-    }
-
-    fun getProfileProxy() {
-        val b = adapter?.getProfileProxy(appContext, profileListener, BluetoothProfile.HEADSET)
-        Log.e(TAG, "getProfileProxy-------------------------------------$b")
     }
 }

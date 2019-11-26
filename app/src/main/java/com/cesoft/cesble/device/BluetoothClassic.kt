@@ -59,11 +59,11 @@ class BluetoothClassic : KoinComponent {
                     /*if(device.name == null || device.name.isEmpty()) {
                         android.util.Log.e(TAG, "onDeviceFound---------------------------------------------------$device has no name. EXIT")
                         //return
-                    }
+                    }*/
                     if(dataSet.contains(device)) {
                         android.util.Log.e(TAG, "onDeviceFound---------------------------------------------------$device already listed. EXIT")
-                        //return
-                    }*/
+                        return
+                    }
 
                     dataSet.add(device)
                     currentScanned++

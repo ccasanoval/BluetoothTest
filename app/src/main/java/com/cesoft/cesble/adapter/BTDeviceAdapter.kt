@@ -31,7 +31,9 @@ class BTDeviceAdapter(private val dataSet: ArrayList<BluetoothDevice>,
             DEVICE_TYPE_CLASSIC     -> "Clss > "
             else                    -> "   ? > "
         }
-        holder.textView.text = headSet + btType + dataSet[position].name
+        val name = dataSet[position].name ?: dataSet[position].address
+
+        holder.textView.text = "$headSet$btType$name"
         holder.textView.tag = position
         holder.textView.setOnClickListener(onClickListener)
         holder.textView.setOnCreateContextMenuListener(onCreateContextMenuListener)

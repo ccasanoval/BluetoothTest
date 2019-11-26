@@ -1,7 +1,5 @@
 package com.cesoft.cesble.presenter
 
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
@@ -21,6 +19,7 @@ import kotlinx.android.synthetic.main.content_main.*
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import kotlin.experimental.and
 
 
 class MainActivity : AppCompatActivity(), MainPresenter.View {
@@ -30,8 +29,6 @@ class MainActivity : AppCompatActivity(), MainPresenter.View {
     }
 
     // implements MainPresenter.View +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//    override val ctx: Context
-//        get() = this
     override lateinit var btnScanClassic: Button
     override lateinit var btnScanLowEnergy: Button
     override lateinit var btnPaired: Button
@@ -56,8 +53,6 @@ class MainActivity : AppCompatActivity(), MainPresenter.View {
         else if(title is String)    builder.setTitle(title)
         if(message is Int)          builder.setMessage(message)
         else if(message is String)  builder.setMessage(message)
-        //builder.setTitle(title)
-        //builder.setMessage(message)
         listener?.let {
             builder.setPositiveButton(android.R.string.yes) { _, _ -> listener.onYes() }
             builder.setNegativeButton(android.R.string.no) { _, _ -> listener.onNo() }
@@ -68,12 +63,6 @@ class MainActivity : AppCompatActivity(), MainPresenter.View {
     override fun requestPermissions2(permissions: Array<String>, requestCode: Int) {
         super.requestPermissions(permissions, requestCode)
     }
-    /*override val broadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            presenter.onBroadcastReceiver(context, intent)
-        }
-    }*/
-
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     private lateinit var presenter: MainPresenter
@@ -113,7 +102,7 @@ class MainActivity : AppCompatActivity(), MainPresenter.View {
         presenter.onResume()
     }
 
-    private var menu: Menu? = null//TODO:change by Stop ...
+    private var menu: Menu? = null
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         this.menu = menu
         menuInflater.inflate(R.menu.menu_main, menu)
@@ -149,5 +138,29 @@ class MainActivity : AppCompatActivity(), MainPresenter.View {
             DiskEvent.Type.DISK_AT_90 ->
                 alert("Disk space is decreasing and scarce now! Free space: ${event.freeSpace}%")
         }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onButtonEvent(event: TestLE.ButtonEvent) {
+        var text = ""
+        if(event.type and TestLE.ButtonEvent.Type.PTT.code > 0) {
+            text += " PTT On "
+        }
+        if(event.type and TestLE.ButtonEvent.Type.PTTB1.code > 0) {
+            text += "PTTB1 On"
+        }
+        if(event.type and TestLE.ButtonEvent.Type.PTTB2.code > 0) {
+            text += "PTTB2 On"
+        }
+        if(event.type and TestLE.ButtonEvent.Type.PTTE.code > 0) {
+            text += "PTTE On"
+        }
+        if(event.type and TestLE.ButtonEvent.Type.PTTS.code > 0) {
+            text += "PTTS On"
+        }
+        if(event.type and TestLE.ButtonEvent.Type.MFB.code > 0) {
+            text += "MFB On"
+        }
+        txtStatus.text = text
     }
 }
