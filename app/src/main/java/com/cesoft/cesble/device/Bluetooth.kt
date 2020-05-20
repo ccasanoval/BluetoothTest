@@ -1,7 +1,6 @@
 package com.cesoft.cesble.device
 
 import android.bluetooth.*
-import android.bluetooth.BluetoothProfile.ServiceListener
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -75,12 +74,14 @@ class Bluetooth : KoinComponent {
     val isDisabled: Boolean
         get() = ! isEnabled
     fun switchOnOf() {
+        Log.e(TAG, "switchOnOf------------------------------------------------2")
         if(isEnabled)
             adapter?.disable()
         else
             adapter?.enable()
     }
     fun reset() {
+        Log.e(TAG, "reset------------------------------------------------2")
         if(isEnabled) {
             adapter?.disable()
             GlobalScope.launch(Dispatchers.IO) {
@@ -101,6 +102,7 @@ class Bluetooth : KoinComponent {
     //----------------------------------------------------------------------------------------------
 
     private fun isConnected() : Boolean {
+        Log.e(TAG, "isConnected------------------------------------------------")
         socket?.let { socket ->
             if(socket.isConnected) {
                 Log.e(TAG, "connect-----------------------1--------------Already connected! ${connectionTypeToString(socket.connectionType)}")
@@ -121,6 +123,7 @@ class Bluetooth : KoinComponent {
 
     private var socket: BluetoothSocket? = null
     fun connectClassic(device: BluetoothDevice) {
+        Log.e(TAG, "connectClassic------------------------------------------------")
         if(isConnected()) return
         GlobalScope.launch(IO) {
             //device.fetchUuidsWithSdp()
@@ -168,6 +171,8 @@ class Bluetooth : KoinComponent {
                         Log.e(TAG, "connect:------------------------------isBluetoothScoAvailableOffCall=${audioManager.isBluetoothScoAvailableOffCall}")
                     }
 
+                    ConnectedDevice.classicDevice = device
+
                     //}
                 } catch (e: Exception) {
                     socket = null
@@ -182,20 +187,21 @@ class Bluetooth : KoinComponent {
     fun connectGatt(device: BluetoothDevice,
                     gattCallback: BluetoothGattCallback,
                     transport: Int=BluetoothDevice.TRANSPORT_LE): BluetoothGatt {
-Log.e(TAG, "connectGatt-------------------------------------address=${device.address}, name=${device.name}, type=${typeToString(device.type)}")
+Log.e(TAG, "connectGatt------------1-------------------------address=${device.address}, name=${device.name}, type=${typeToString(device.type)}")
         return device.connectGatt(appContext, true, gattCallback, transport)
     }
 
     fun connectGatt(device: BluetoothDevice): BluetoothGatt  {
+Log.e(TAG, "connectGatt-------------2------------------------address=${device.address}, name=${device.name}, type=${typeToString(device.type)}")
         return device.connectGatt(appContext, true,
             object : BluetoothGattCallback() {
                 override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
                     super.onConnectionStateChange(gatt, status, newState)
                     Log.e(TAG, "connect:onConnectionStateChange-------------------------------------status=${stateProfileToString(status)}, newState=${stateProfileToString(newState)}")
+                    ConnectedDevice.leDevice = gatt.device
+                    ConnectedDevice.leStatus = newState
                     if(newState == BluetoothProfile.STATE_CONNECTED) {
                         Log.e(TAG, "connect:onConnectionStateChange-------------------------------------STATE_CONNECTED : "+gatt.device.name)
-
-                        ConnectedDevice.device = gatt.device
 
                         val audioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
                         audioManager.startBluetoothSco()

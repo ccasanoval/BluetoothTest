@@ -3,6 +3,7 @@ package com.cesoft.cesble.presenter
 import android.bluetooth.*
 import android.util.Log
 import com.cesoft.cesble.device.Bluetooth
+import com.cesoft.cesble.device.ConnectedDevice
 import org.greenrobot.eventbus.EventBus
 import org.koin.core.KoinComponent
 import org.koin.core.inject
@@ -34,6 +35,10 @@ object TestLE : KoinComponent {
     private val bluetooth : Bluetooth by inject()
     private var bluetoothGatt: BluetoothGatt? = null
 
+    fun pairing(device: BluetoothDevice) {
+        device.createBond()
+    }
+
     fun start(device: BluetoothDevice) {
 
         //TODO: Check if bluetooth is connected...
@@ -41,30 +46,31 @@ object TestLE : KoinComponent {
             if(deviceClassic.type == BluetoothDevice.DEVICE_TYPE_CLASSIC)
                 bluetooth.connectClassic(deviceClassic)
         }
+        //if(ConnectedDevice.device )
 
         if(device.type != BluetoothDevice.DEVICE_TYPE_LE && device.type != BluetoothDevice.DEVICE_TYPE_DUAL) {
             Log.e(TAG,"************ This device is not LE so connecting by GATT won't work ************")
         }
         try { bluetoothGatt?.disconnect() } catch(ignore: Exception){}
-        bluetoothGatt?.close()
+        try { bluetoothGatt?.close() } catch(ignore: Exception){}
         bluetoothGatt = bluetooth.connectGatt(device, gattCallback)
+        //bluetoothGatt = device.connectGatt(appContext, true, gattCallback, BluetoothDevice.TRANSPORT_LE)
         Log.e(TAG, "start--------------------------------------#services="+bluetoothGatt?.services?.size)
     }
 
     private fun sendButtonsStatus(characteristic: BluetoothGattCharacteristic) {
         EventBus.getDefault().post(ButtonEvent(characteristic))
-        //val eb = EventBus.getDefault()
-        //eb.post(ButtonEvent(ButtonEvent.Type.PTT, (characteristic.value[0] and ButtonEvent.Type.PTT.code > 0)))
-        /*val PTTE = when(characteristic.value[0] and 0x02 > 0) { true -> " 1 "; else -> " 0 "}
-        val PTTS = when(characteristic.value[0] and 0x04 > 0) { true -> " 1 "; else -> " 0 "}
-        val PTTB1 = when(characteristic.value[0] and 0x08 > 0) { true -> " 1 "; else -> " 0 "}
-        val PTTB2 = when(characteristic.value[0] and 0x10 > 0) { true -> " 1 "; else -> " 0 "}
-        val MFB = when(characteristic.value[0] and 0x20 > 0) { true -> " 1 "; else -> " 0 "}*/
     }
 
     private val gattCallback = object : BluetoothGattCallback() {
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
             if(characteristic.uuid.toString() == UUID_LE_BUTTONS.toString()) {
+                Log.e(TAG, "onCharacteristicChanged-------------------------------UUID_LE_BUTTONS ${characteristic.value} / "+characteristic.getStringValue(0))
+
+                for(desc in characteristic.descriptors) {
+                    Log.e(TAG, "onCharacteristicChanged-------------------------------des: ${desc.value} ")
+                }
+
                 printButtonStatus(characteristic)
                 sendButtonsStatus(characteristic)
             }
@@ -73,7 +79,9 @@ object TestLE : KoinComponent {
         }
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
             super.onConnectionStateChange(gatt, status, newState)
-            Log.e(TAG, "gattCallback:onConnectionStateChange------------------------------status=${Bluetooth.stateProfileToString(status)} newState=${Bluetooth.stateProfileToString(newState)}")
+            Log.e(TAG, "gattCallback:onConnectionStateChange------------------------------status=${Bluetooth.stateProfileToString(status)} newState=${Bluetooth.stateProfileToString(newState)}  device=${gatt.device}")
+            ConnectedDevice.leDevice = gatt.device
+            ConnectedDevice.leStatus = newState
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
                     Log.e(TAG, "gattCallback: Connected to GATT server.--------------------------------------STATE_CONNECTED")
@@ -136,25 +144,9 @@ object TestLE : KoinComponent {
             bluetoothGatt!!.writeDescriptor(descriptor)
         }
 
-        // Result of a characteristic read operation
         override fun onCharacteristicRead(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
             Log.e(TAG, "onCharacteristicRead----------------------------------characteristic=${characteristic.uuid}  status=$status  value=${characteristic.value}  size=${characteristic.value.size}")
-            when(status) {
-                BluetoothGatt.GATT_SUCCESS -> {
-                    Log.e(TAG, "onCharacteristicRead----------------------------------GATT_SUCCESS ")
-                    if(characteristic.uuid.toString() == UUID_LE_BUTTONS.toString()) {
-//                        printButtonStatus(characteristic)
-                        /// Enable notification for button characteristic change
-                        //val buttonsChar = bluetoothGatt!!.getService(UUID_LE_SERVICE).getCharacteristic(UUID_LE_BUTTONS)
-//                        bluetoothGatt!!.setCharacteristicNotification(characteristic, true)
-//                        val descriptor: BluetoothGattDescriptor = characteristic.getDescriptor(UUID_LE_CONFIG)
-//                        descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-//                        bluetoothGatt!!.writeDescriptor(descriptor)
-                    }
-                }
-            }
         }
-
         override fun onPhyUpdate(gatt: BluetoothGatt, txPhy: Int, rxPhy: Int, status: Int) {
             Log.e(TAG, "onPhyUpdate----------------------------------")
         }
@@ -182,10 +174,7 @@ object TestLE : KoinComponent {
     }
 
 
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
     private val LEDS = UUID.fromString("127FDEAD-CB21-11E5-93D0-0002A5D5C51B")

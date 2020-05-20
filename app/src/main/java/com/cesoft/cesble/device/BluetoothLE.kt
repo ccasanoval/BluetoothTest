@@ -26,11 +26,7 @@ class BluetoothLE : KoinComponent {
 
         val ssb = ScanSettings.Builder()
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-            //.setScanMode(ScanSettings.SCAN_MODE_BALANCED)
             .setReportDelay(5000)
-        //.setUseHardwareBatchingIfSupported(true)
-        //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-        //    ssb.setLegacy(false)
 
         val settings = ssb.build()
 
@@ -39,9 +35,8 @@ class BluetoothLE : KoinComponent {
         filters.add(filter)
 
         bluetooth.adapter?.bluetoothLeScanner?.startScan(filters, settings, scanCallback)//filters is mandatory for Android 9!!!
-        //bluetoothAdapter?.bluetoothLeScanner?.startScan(null, settings, callbackStart)
-        //bluetoothAdapter?.bluetoothLeScanner?.startScan(callbackStart)
     }
+
     fun stopScan() {
         android.util.Log.e(TAG, "stopScan---------------------------------------------$isLowEnergyEnabled $callback ")
         if(isLowEnergyEnabled && callback != null) {
@@ -68,14 +63,6 @@ class BluetoothLE : KoinComponent {
         override fun onBatchScanResults(results: List<ScanResult>) {
 
 for(item in results)android.util.Log.e(TAG, "onBatchScanResults-- Z:"+item.scanRecord?.deviceName+", "+item.device.name+", "+item.device.address+", "+item.device.type+", "+item.device.bluetoothClass)
-
-//            val filteredResults = results.filter { it.scanRecord?.deviceName != null }
-//for(item in filteredResults)android.util.Log.e(TAG, "onBatchScanResults-- C:"+item.scanRecord?.deviceName+", "+item.device.name+", "+item.device.address+", "+item.device.type+", "+item.device.bluetoothClass)
-
-//            val sortedResults = filteredResults.toSortedSet(Comparator { scanResult1: ScanResult, scanResult2: ScanResult ->
-//                scanResult1.scanRecord!!.deviceName!!.compareTo(scanResult2.scanRecord!!.deviceName!!)
-//            })
-//            callback?.onBatchScanResults(sortedResults.toList())
 
             callback?.onBatchScanResults(results)
         }

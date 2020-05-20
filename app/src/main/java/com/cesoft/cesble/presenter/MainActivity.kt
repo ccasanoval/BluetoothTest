@@ -2,6 +2,7 @@ package com.cesoft.cesble.presenter
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Button
@@ -81,24 +82,29 @@ class MainActivity : AppCompatActivity(), MainPresenter.View {
         txtStatus = txt_status
         listDevices = list_devices
         presenter = MainPresenter(this)
+Log.e(TAG, "onCreate----------------------------------------------------------------")
     }
     override fun onDestroy() {
         super.onDestroy()
         presenter.onDestroy()
     }
 
-    public override fun onStart() {
+    override fun onStart() {
         super.onStart()
+Log.e(TAG, "onStart----------------------------------------------------------------")
+        presenter.onStart()
         EventBus.getDefault().register(this)
     }
 
-    public override fun onStop() {
+    override fun onStop() {
         super.onStop()
+        presenter.onStop()
         EventBus.getDefault().unregister(this)
     }
 
     override fun onResume() {
         super.onResume()
+        Log.e(TAG, "onResume----------------------------------------------------------------")
         presenter.onResume()
     }
 

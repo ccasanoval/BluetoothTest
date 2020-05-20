@@ -21,11 +21,11 @@ import com.cesoft.cesble.R
 import com.cesoft.cesble.adapter.BTDeviceAdapter
 import com.cesoft.cesble.adapter.BTLEDeviceAdapter
 import com.cesoft.cesble.adapter.BTViewHolder
-import com.cesoft.cesble.device.Audio
-import com.cesoft.cesble.device.Bluetooth
-import com.cesoft.cesble.device.BluetoothClassic
-import com.cesoft.cesble.device.BluetoothLE
+import com.cesoft.cesble.device.*
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 import org.koin.core.KoinComponent
 import org.koin.core.inject
 
@@ -236,6 +236,10 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
                 TestLE.start(adapter.getItemAt(view.tag as Int).device)
                 true
             }
+            contextMenu.add(0, view.id, 0, "LE Pairing").setOnMenuItemClickListener {
+                TestLE.pairing(adapter.getItemAt(view.tag as Int).device)
+                true
+            }
         }
 
     fun onResume() {
@@ -286,8 +290,8 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
 
     //----------------------------------------------------------------------------------------------
     fun onBroadcastReceiver(intent: Intent) {
+        Log.e(TAG, "onBroadcastReceiver----------------------------------------------------------------")
         when (val action = intent.action) {
-
             /// AudioManager ///
             AudioManager.ACTION_AUDIO_BECOMING_NOISY -> {
                 Log.e(TAG,"ACTION_AUDIO_BECOMING_NOISY-----------------------------------------------------")
@@ -299,6 +303,7 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
                 val state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, AudioManager.SCO_AUDIO_STATE_ERROR)
                 val stateOld = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_PREVIOUS_STATE, AudioManager.SCO_AUDIO_STATE_ERROR)
                 Log.e(TAG,"ACTION_SCO_AUDIO_STATE_UPDATED-----------------------------------------------------STATE: ${Audio.stateToString(stateOld)} --> ${Audio.stateToString(state)}")
+                ConnectedDevice.scoAudioStatus = state
                 if(state == AudioManager.SCO_AUDIO_STATE_CONNECTED)
                     audio.setBluetoothScoOn()
             }
@@ -306,6 +311,7 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
             /// BluetoothAdapter ///
             BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED -> {
                 val state = intent.getIntExtra(BluetoothAdapter.EXTRA_CONNECTION_STATE, BluetoothAdapter.ERROR)
+                ConnectedDevice.classicStatus = state
                 when(state) {
                     BluetoothAdapter.STATE_CONNECTING -> view.txtStatus.text = textConnecting
                     BluetoothAdapter.STATE_DISCONNECTING -> view.txtStatus.text = textDisconnecting
@@ -560,4 +566,23 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
         }
     }
 
+
+    fun onStart() {
+        EventBus.getDefault().register(this)
+    }
+    fun onStop() {
+        EventBus.getDefault().unregister(this)
+    }
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onEvent(event: ConnectedDevice.ScoEvent) {
+        Log.e(TAG, "onEvent:ScoEvent----------------------------------------------------------------event:$event")
+    }
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onEvent(event: ConnectedDevice.LeEvent) {
+        Log.e(TAG, "onEvent:LeEvent----------------------------------------------------------------event:$event")
+    }
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onEvent(event: ConnectedDevice.ClassicEvent) {
+        Log.e(TAG, "onEvent:ClassicEvent----------------------------------------------------------------event:$event")
+    }
 }
