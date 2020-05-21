@@ -208,6 +208,10 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
                 bluetooth.connectGatt(device)
                 true
             }
+            contextMenu.add(0, view.id, 0, "LE Test Peltor").setOnMenuItemClickListener {
+                TestLEPeltor.start(device)
+                true
+            }
         }
     private val classicContextMenuListener =
         android.view.View.OnCreateContextMenuListener { contextMenu: ContextMenu, view: android.view.View, contextMenuInfo: ContextMenu.ContextMenuInfo? ->
@@ -286,6 +290,9 @@ class MainPresenter(private val view: View) : ViewModel(), KoinComponent {
     fun stopSound() {
         if(checkPermissionsForAudioRecording())
             audio.stop()
+    }
+    fun peltorTest() {
+        Log.e(TAG,"peltorTest-----------------------------------------------------")
     }
 
     //----------------------------------------------------------------------------------------------

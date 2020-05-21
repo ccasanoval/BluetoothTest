@@ -39,4 +39,10 @@
         android:orderInCategory="101"
         android:title="@string/action_sound_stop"
         app:showAsAction="never" />
+
+    <!--item
+        android:id="@+id/action_peltor"
+        android:orderInCategory="501"
+        android:title="@string/action_peltor"
+        app:showAsAction="never" /-->
 </menu>

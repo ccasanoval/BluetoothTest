@@ -128,6 +128,7 @@ Log.e(TAG, "onStart-------------------------------------------------------------
             }
             R.id.action_audio_play -> presenter.playAudio()
             R.id.action_sound_stop -> presenter.stopSound()
+            //R.id.action_peltor -> presenter.peltorTest()
             else -> return super.onOptionsItemSelected(item)
         }
         return true

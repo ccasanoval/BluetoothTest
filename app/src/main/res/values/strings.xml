@@ -11,6 +11,7 @@
     <string name="action_sound_stop">Stop Sound</string>
     <string name="action_aina_spp">SPP test</string>
     <string name="action_aina_ble">AINA BLE test</string>
+    <string name="action_peltor">Peltor test</string>
 
     <string name="state_disabled">Disabled</string>
     <string name="state_scanning">Scanning…</string>
